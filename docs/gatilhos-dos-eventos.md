@@ -17,15 +17,15 @@ Os horários de rotina indicados nesta página usam o **horário de Brasília**.
 | [Compra Completa](#compra-completa) | `Purchase_Order_Confirmed` | Primeiro pagamento confirmado. |
 | [Pedido de Compra Expirada](#pedido-de-compra-expirada) | `Purchase_Request_Expired` | Prazo sem pagamento, substituição da compra pendente ou falha na reserva de ingresso. |
 | [Pedido de Compra Cancelado](#pedido-de-compra-cancelado) | `Purchase_Request_Canceled` | Membro cancela antes do primeiro pagamento. |
-| [Carrinho Abandonado](#carrinho-abandonado) | `Abandoned_Cart` | Checkout sem atualização entre 30 minutos e 6 horas, sujeito às condições da oferta. |
-| [Pagamento de Renovação Efetuado](#pagamento-de-renovação-efetuado) | `Recurrent_Payment` | Pagamento confirmado do segundo em diante, em assinatura. |
-| [Assinatura Pendente de Renovação](#assinatura-pendente-de-renovação) | `Subscription_Renewal_Pending` | Mudança para pendente de renovação. |
+| [Carrinho Abandonado](#carrinho-abandonado) | `Abandoned_Cart` | Checkout sem atualização por 30 minutos. |
+| [Pagamento de Renovação Efetuado](#pagamento-de-renovação-efetuado) | `Recurrent_Payment` | Pagamento de renovação de assinatura. |
+| [Assinatura Pendente de Renovação](#assinatura-pendente-de-renovação) | `Subscription_Renewal_Pending` | Quando uma assinatura fica pendente de renovação. |
 | [Assinatura Expirada](#assinatura-expirada) | `Subscription_Expired` | Fim do prazo e da carência sem pagamento, ou outras condições de expiração. |
 | [Assinatura Cancelada](#assinatura-cancelada) | `Subscription_Canceled` | Cancelamento da assinatura pelos fluxos descritos. |
 | [Reembolso solicitado](#reembolso-solicitado) | `Refund_Requested` | Pedido do membro encaminhado à avaliação manual. |
 | [Pagamento Reembolsado](#pagamento-reembolsado) | `Payment_Refund` | Lastlink confirma o reembolso. |
 | [Pagamento Estornado](#pagamento-estornado) | `Payment_Chargeback` | Estorno ou disputa confirmada, conforme o meio de pagamento e o fluxo da compra. |
-| [Periodo de Reembolso Terminado](#periodo-de-reembolso-terminado) | `Refund_Period_Over` | Rotina para pagamento aprovado com garantia encerrada. |
+| [Periodo de Reembolso Terminado](#periodo-de-reembolso-terminado) | `Refund_Period_Over` | Quando o prazo de garantia de reembolso encerra. |
 | [Início liberação de acesso](#início-liberação-de-acesso) | `Product_Access_Started` | Acesso criado por pagamento, convite, order bump ou bundle. |
 | [Fim liberação de acesso](#fim-liberação-de-acesso) | `Product_Access_Ended` | Acesso efetivamente removido. |
 | [Liberação e remoção de acesso](#liberação-e-remoção-de-acesso) | `Subscription_Product_Access` | Add ou Remove para acesso pago vinculado à assinatura. |

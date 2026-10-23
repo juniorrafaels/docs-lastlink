@@ -42,14 +42,14 @@ A aplicação que recebe o webhook pode usar esse token como um **secret** para 
 2. Leia o valor do header `x-lastlink-token` da requisição recebida.
 3. Compare o valor recebido com o token armazenado antes de processar o evento. Ao adotar essa validação, rejeite chamadas com token ausente ou diferente.
 
-No exemplo, substitua `SEU_TOKEN_DA_INTEGRACAO` pelo token disponibilizado na plataforma.
+No exemplo, substitua `SEU_TOKEN_DA_INTEGRACAO` pelo token disponibilizado na plataforma. Veja o passo a passo em [Autenticação](./autenticacao.md).
 
 ## Distribuição dos eventos
 
 Um evento é distribuído para um webhook quando as três condições são atendidas:
 
 1. O webhook está **ativo**.
-2. A integração está **inscrita no evento**.
+2. O evento está **selecionado na configuração da integração**.
 3. O webhook está ligado a **um dos produtos envolvidos no evento**.
 
 Order bump e bundle também entram como produtos para essa seleção. Considere a lista `Data.Products` nos eventos que a utilizam e o objeto singular `Data.Product` nos eventos de acesso.
@@ -60,7 +60,7 @@ O timeout de cada envio HTTP é de **10 segundos**. Uma resposta `2xx` confirma 
 
 Após falhas, os intervalos entre as tentativas são **1, 5, 10, 30, 60, 120 e 240 minutos**. Depois, o intervalo permanece em **240 minutos**, até o término do prazo de retenção configurado no ambiente.
 
-O prazo de retenção depende da configuração do cluster. Esses intervalos não estabelecem um número fixo de tentativas nem uma duração universal de 24 ou 28 horas.
+O prazo de retenção depende da configuração do cluster. Esses intervalos não estabelecem um número fixo de tentativas nem uma duração universal de 24 ou 28 horas. Mais detalhes em [Retentativas](./retentativas.md).
 
 ### Preparação do payload e entrega HTTP
 

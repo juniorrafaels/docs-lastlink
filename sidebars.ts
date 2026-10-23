@@ -3,13 +3,14 @@ import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
 const sidebars: SidebarsConfig = {
   apiSidebar: [
     'intro',
-    'endpoints',
     {
       type: 'category',
       label: 'Webhooks',
       link: {type: 'doc', id: 'webhooks'},
       collapsed: false,
       items: [
+        'autenticacao',
+        'retentativas',
         'regras',
         'gatilhos-dos-eventos',
         'catalogo-de-variaveis',

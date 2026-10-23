@@ -23,12 +23,12 @@ Acesse http://localhost:3000. As alterações na documentação são atualizadas
 
 ## Editar a documentação
 
-- `docs/`: páginas Markdown e MDX, incluindo introdução, endpoints e webhooks.
+- `docs/`: páginas Markdown e MDX, incluindo introdução, autenticação, retentativas e webhooks.
 - `sidebars.ts`: navegação lateral gerada a partir da pasta `docs/`.
 - `docusaurus.config.ts`: título, idioma, navegação e domínio de publicação.
 - `src/css/custom.css`: estilos do site.
 
-A documentação é servida diretamente na raiz `/`. A introdução e a página de endpoints estão reservadas para preenchimento posterior. Os eventos de webhooks ficam em `docs/eventos/`.
+A documentação é servida diretamente na raiz `/`. Os eventos de webhooks ficam em `docs/eventos/`.
 
 ## Catálogo de variáveis
 
