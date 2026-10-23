@@ -1,0 +1,58 @@
+---
+sidebar_position: 1
+slug: /
+title: Introdução
+---
+
+# Webhooks Lastlink
+
+Este espaço reúne a documentação da API e dos webhooks do projeto.
+
+:::info Em preparação
+Esta página está reservada para a introdução geral da documentação. Os guias iniciais e os detalhes de configuração serão adicionados posteriormente.
+:::
+
+## Organização
+
+- [Endpoints](./endpoints.md): operações da API, parâmetros, respostas e erros.
+- [Webhooks](./webhooks.md): eventos, payloads e orientações para recebimento.
+- [Regras](./regras.md): regras gerais e condições de envio dos campos dos webhooks.
+- [Catálogo de variáveis](./catalogo-de-variaveis.md): campos, tipos, valores e eventos em que aparecem.
+- [Débitos técnicos](./debitos-tecnicos.md): bugs conhecidos e acompanhamento das correções.
+
+## Eventos disponíveis
+
+- [Carrinho Abandonado](./eventos/carrinho-abandonado.md): regras de disparo, campos e exemplo do evento `Abandoned_Cart`.
+- [Fatura Criada](./eventos/fatura-gerada.mdx): campos e exemplos do evento `Purchase_Request_Confirmed`.
+
+- [Compra Completa](./eventos/compra-aprovada.mdx): campos e exemplos do evento `Purchase_Order_Confirmed`.
+
+- [Pagamento Estornado](./eventos/pagamento-estornado.mdx): campos e exemplo do evento `Payment_Chargeback`.
+
+- [Reembolso solicitado](./eventos/reembolso-solicitado.mdx): campos e exemplos do evento `Refund_Requested`.
+
+- [Pagamento Reembolsado](./eventos/pagamento-reembolsado.mdx): campos e exemplos do evento `Payment_Refund`.
+
+- [Pedido de Compra Cancelado](./eventos/compra-cancelada.mdx): campos e exemplos do evento `Purchase_Request_Canceled`.
+
+- [Pedido de Compra Expirada](./eventos/pedido-de-compra-expirado.mdx): campos e exemplos de expiração da fatura.
+
+- [Pagamento de Renovação Efetuado](./eventos/pagamento-de-renovacao-efetuado.mdx): campos e exemplos do evento `Recurrent_Payment`, exclusivo de assinaturas.
+
+- [Periodo de Reembolso Terminado](./eventos/periodo-de-reembolso-terminado.mdx): campos e exemplos do evento `Refund_Period_Over`.
+
+- [Assinatura Cancelada](./eventos/assinatura-cancelada.mdx): campos, regras de disparo e exemplos do evento `Subscription_Canceled`.
+
+- [Assinatura Expirada](./eventos/assinatura-expirada.mdx): campos e exemplos do evento `Subscription_Expired`.
+
+- [Liberação e remoção de acesso](./eventos/liberacao-e-remocao-de-acesso.mdx): campos e exemplos de `Add` e `Remove` do evento `Subscription_Product_Access`.
+
+- [Assinatura Pendente de Renovação](./eventos/assinatura-pendente-de-renovacao.mdx): prazos por método de pagamento, campos e exemplos do evento `Subscription_Renewal_Pending`.
+
+- [Início liberação de acesso](./eventos/inicio-liberacao-de-acesso.mdx): campos e exemplos do evento `Product_Access_Started` para membros pagos e convidados.
+
+- [Fim liberação de acesso](./eventos/fim-liberacao-de-acesso.md): regras de disparo, campos e exemplo do evento `Product_Access_Ended`.
+
+## Como contribuir
+
+Edite os arquivos Markdown ou MDX na pasta `docs/`. A navegação lateral é gerada automaticamente a partir dessa pasta.

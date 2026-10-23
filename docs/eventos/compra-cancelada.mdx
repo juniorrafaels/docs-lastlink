@@ -1,0 +1,653 @@
+---
+sidebar_position: 7
+title: Pedido de Compra Cancelado
+description: Regras de disparo, campos e exemplos do webhook Purchase_Request_Canceled da Lastlink.
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Pedido de Compra Cancelado
+
+O evento `Purchase_Request_Canceled` é disparado quando o status de uma **compra passa para cancelado**.
+
+## Quando é disparado
+
+O evento tem um único gatilho: o **membro cancela, na área de membros, uma assinatura cuja primeira cobrança ainda não foi paga**.
+
+### Meios de pagamento e condições
+
+Aplica-se a todos os meios de pagamento.
+
+Consulte também o [resumo dos gatilhos](../gatilhos-dos-eventos.md#pedido-de-compra-cancelado) e as [regras de distribuição e entrega](../regras.md#distribuição-dos-eventos).
+
+## Dados do comprador
+
+:::important Campos de formulário em Buyer
+Esta regra vale para **todos os webhooks**: o **e-mail é o dado mínimo e obrigatório** no checkout.
+
+Os demais dados de formulário dependem dos campos habilitados pelo produtor e preenchidos pelo usuário. Se um desses dados não estiver em `Buyer`, ele não foi informado no checkout.
+
+Os campos de endereço só são enviados quando estiverem habilitados pelo produtor no formulário de checkout e tiverem sido preenchidos pelo usuário. O exemplo completo não significa que todos esses campos estarão presentes em todos os disparos.
+:::
+
+Consulte também as [regras gerais de dados do comprador](../webhooks.md#dados-do-comprador-no-checkout).
+
+## Como interpretar este evento
+
+Este evento descreve o status da compra. O cancelamento da assinatura é informado por [Assinatura Cancelada](./assinatura-cancelada.mdx), e a conclusão de um reembolso é informada por [Pagamento Reembolsado](./pagamento-reembolsado.mdx). Cada evento deve ser interpretado conforme a mudança que comunica.
+
+Use `Data.Subscriptions[].Id` para relacionar a assinatura aos demais eventos e `Data.Subscriptions[].ProductId` para identificar o produto correspondente. O nome do evento não deve ser usado como substituto do identificador da assinatura.
+
+## Estrutura do payload
+
+Os nomes dos campos correspondem às chaves do JSON, incluindo letras maiúsculas e minúsculas. Os tipos indicam o formato dos valores quando presentes; a lista de campos não torna obrigatórios os dados condicionais.
+
+### Campos principais
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `Id` | `string` | Identificador do webhook. |
+| `IsTest` | `boolean` | Indica se é um evento de teste: `true` para teste e `false` para um evento real. |
+| `Event` | `string` | Nome do evento. Nesta página, o valor é `Purchase_Request_Canceled`. |
+| `CreatedAt` | `string` | Data e hora em que o evento foi criado. Exemplo: `2026-10-22T16:05:18`. |
+| `Data` | `object` | Agrupa os dados da operação: produtos, comprador, vendedor, comissões, compra, assinaturas, oferta, rastreamento e dispositivo. |
+
+### Produtos — `Data.Products`
+
+Lista de todos os produtos envolvidos na operação.
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `Data.Products` | `array<object>` | Produtos relacionados à compra cancelada. |
+| `Data.Products[].Id` | `string` | Identificador do produto. |
+| `Data.Products[].Name` | `string` | Nome do produto. |
+| `Data.Products[].Quantity` | `number` | Quantidade do produto na operação, útil para casos como a aquisição de vários ingressos. |
+
+### Comprador — `Data.Buyer`
+
+Dados do comprador associado à compra.
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `Data.Buyer` | `object` | Dados do comprador. |
+| `Data.Buyer.Id` | `string` | Identificador do usuário. |
+| `Data.Buyer.Email` | `string` | E-mail do comprador. Dado mínimo e obrigatório no checkout. |
+| `Data.Buyer.Name` | `string` | Nome do comprador, quando informado. |
+| `Data.Buyer.PhoneNumber` | `string` | Telefone do comprador, quando informado. |
+| `Data.Buyer.Document` | `string` | CPF do comprador, quando informado. |
+| `Data.Buyer.Address` | `object` | Endereço do comprador, enviado conforme a habilitação e o preenchimento dos campos no checkout. |
+| `Data.Buyer.Address.ZipCode` | `string` | CEP. |
+| `Data.Buyer.Address.Street` | `string` | Rua ou logradouro. |
+| `Data.Buyer.Address.StreetNumber` | `string` | Número do imóvel. |
+| `Data.Buyer.Address.Complement` | `string` | Complemento do endereço. |
+| `Data.Buyer.Address.District` | `string` | Bairro. |
+| `Data.Buyer.Address.City` | `string` | Cidade. |
+| `Data.Buyer.Address.State` | `string` | Estado. |
+
+### Vendedor — `Data.Seller`
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `Data.Seller` | `object` | Dados do vendedor. |
+| `Data.Seller.Id` | `string` | Identificador do vendedor. |
+| `Data.Seller.Email` | `string` | E-mail do vendedor. |
+
+### Comissões — `Data.Commissions`
+
+Valores das comissões e seus destinatários relacionados à operação associada à compra.
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `Data.Commissions` | `array<object>` | Lista das comissões da operação. |
+| `Data.Commissions[].Value` | `number` | Valor da comissão referente ao destinatário indicado em `Source`. |
+| `Data.Commissions[].Source` | `string` | Destinatário da comissão. Use o valor de `Source` para identificar o papel do destinatário; consulte os valores abaixo. |
+| `Data.Commissions[].Details` | `array<object>` | Detalhamento dos coprodutores envolvidos. Cada item identifica o coprodutor em `ReceiverId` e `ReceiverEmail`, com seu valor em `Amount`. |
+| `Data.Commissions[].Details[].ReceiverId` | `string` | Identificador do coprodutor. |
+| `Data.Commissions[].Details[].Amount` | `number` | Valor destinado ao coprodutor. |
+| `Data.Commissions[].Details[].ReceiverEmail` | `string` | E-mail do coprodutor. |
+
+#### Valores de `Source`
+
+| Valor | Destinatário |
+| --- | --- |
+| `MARKETPLACE` | Lastlink. |
+| `PRODUCER` | Produtor. |
+| `COPRODUCER` | Coprodutor. |
+| `AFFILIATE` | Afiliado. |
+
+### Compra — `Data.Purchase`
+
+Dados da operação associada à compra cancelada.
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `Data.Purchase` | `object` | Dados da compra. |
+| `Data.Purchase.PaymentId` | `string` | Identificador do pagamento. |
+| `Data.Purchase.PaymentDate` | `string` | Data e hora do pagamento relacionado ao evento. Em reembolso, chargeback e término da garantia, refere-se ao pagamento original. |
+| `Data.Purchase.NextBilling` | `string` ou `null` | Vencimento da próxima cobrança. Quando `Recurrency` é `0` (compra única), o valor é `null`. |
+| `Data.Purchase.Recurrency` | `number` | Periodicidade do plano. Consulte os valores abaixo. Expressa o intervalo do plano em meses, não o número da cobrança nem a posição de uma parcela. |
+| `Data.Purchase.OriginalPrice` | `object` | Preço da oferta antes do desconto. Objeto cujo campo `Value` contém o valor numérico. |
+| `Data.Purchase.OriginalPrice.Value` | `number` | Valor original, sem o desconto. |
+| `Data.Purchase.Price` | `object` | Preço final da compra. Objeto cujo campo `Value` contém o valor numérico. |
+| `Data.Purchase.Price.Value` | `number` | Valor final da compra, considerando descontos e incluindo juros quando aplicáveis. |
+| `Data.Purchase.InvoiceUrl` | `string` | URL da página de fatura da Lastlink, que pode ser utilizada para realizar o pagamento. |
+| `Data.Purchase.OriginUrl` | `string` | URL completa do checkout no momento da operação, incluindo os parâmetros de rastreamento presentes. |
+| `Data.Purchase.IsUpsell` | `boolean` | Indica se a fatura foi gerada em uma venda de upsell. |
+| `Data.Purchase.IsSmartInstallment` | `boolean` | Indica se a operação utiliza parcelamento inteligente. O objeto `SmartInstallment` só é enviado quando o valor é `true`. |
+
+#### Periodicidade — `Recurrency`
+
+| Valor | Periodicidade |
+| --- | --- |
+| `0` | Compra única. |
+| `1` | Assinatura mensal. |
+| `3` | Assinatura trimestral. |
+| `6` | Assinatura semestral. |
+| `12` | Assinatura anual. |
+
+### Pagamento — `Data.Purchase.Payment`
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `Data.Purchase.Payment` | `object` | Dados da forma de pagamento da fatura. |
+| `Data.Purchase.Payment.NumberOfInstallments` | `number` | Número de parcelas do pagamento, de 1 a 12. |
+| `Data.Purchase.Payment.PaymentMethod` | `string` | Método de pagamento: `pix`, `bankslip` ou `credit_card`. |
+
+| `PaymentMethod` | Forma de pagamento | Dados específicos |
+| --- | --- | --- |
+| `pix` | Pix. | `Data.Purchase.Pix`. |
+| `bankslip` | Boleto bancário. | `Data.Purchase.BankSlip`. |
+| `credit_card` | Cartão de crédito. | Os exemplos de cartão não incluem `Pix` nem `BankSlip`. |
+
+### Afiliado — `Data.Purchase.Affiliate`
+
+Dados do afiliado associado à operação, quando houver.
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `Data.Purchase.Affiliate` | `object` | Dados do afiliado. |
+| `Data.Purchase.Affiliate.Id` | `string` | Identificador do afiliado. |
+| `Data.Purchase.Affiliate.Email` | `string` | E-mail do afiliado. |
+
+### Pix — `Data.Purchase.Pix`
+
+Disponível apenas quando `Data.Purchase.Payment.PaymentMethod` é `pix`.
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `Data.Purchase.Pix` | `object` | Dados para pagamento via Pix. |
+| `Data.Purchase.Pix.QrCode` | `string` | URL da imagem do QR Code do Pix. |
+| `Data.Purchase.Pix.QrCodeText` | `string` | Código Pix copia e cola para pagamento. |
+
+### Boleto — `Data.Purchase.BankSlip`
+
+Quando o método de pagamento é `bankslip`, o objeto `BankSlip` é exibido no lugar de `Pix`.
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `Data.Purchase.BankSlip` | `object` | Dados para pagamento via boleto. |
+| `Data.Purchase.BankSlip.DigitableLine` | `string` | Linha digitável do boleto. |
+| `Data.Purchase.BankSlip.BarCodeData` | `string` | Conteúdo numérico do código de barras do boleto. |
+| `Data.Purchase.BankSlip.BarCode` | `string` | Link com o código de barras do boleto. |
+
+### Parcelamento inteligente — `Data.Purchase.SmartInstallment`
+
+Detalha o parcelamento inteligente quando `IsSmartInstallment` é `true`. A parcela atual é a parcela à qual a fatura se refere; o evento não informa que ela já foi paga.
+
+Consulte a [regra de presença do objeto SmartInstallment](../regras.md#parcelamento-inteligente).
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `Data.Purchase.SmartInstallment` | `object` | Detalhamento condicional do parcelamento inteligente, enviado somente quando `IsSmartInstallment` é `true`. |
+| `Data.Purchase.SmartInstallment.CurrentInstallment` | `number` | Parcela atual do parcelamento inteligente, referente a esta fatura. |
+| `Data.Purchase.SmartInstallment.TotalInstallments` | `number` | Total de parcelas do parcelamento inteligente contratado. |
+| `Data.Purchase.SmartInstallment.Type` | `string` | Origem da contratação: `direct` ou `recovery`. |
+
+| `Type` | Descrição |
+| --- | --- |
+| `direct` | O comprador escolheu o parcelamento inteligente como primeira opção de compra. |
+| `recovery` | Houve uma falha na cobrança e o sistema recuperou a operação com parcelamento inteligente. |
+
+`Payment.NumberOfInstallments` descreve as parcelas do pagamento, enquanto `SmartInstallment.TotalInstallments` descreve as parcelas do parcelamento inteligente. Nos exemplos fornecidos, esses valores podem ser diferentes.
+
+### Assinaturas — `Data.Subscriptions`
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `Data.Subscriptions` | `array<object>` | Lista com os dados das assinaturas relacionadas à operação. |
+| `Data.Subscriptions[].Id` | `string` | Identificador da assinatura relacionada à operação. Use-o para acompanhar a mesma assinatura entre os eventos. |
+| `Data.Subscriptions[].ProductId` | `string` | Identificador do produto relacionado à assinatura; corresponde ao `Id` do produto em `Data.Products`. |
+| `Data.Subscriptions[].CanceledDate` | `string` | **a confirmar** — significado desta data no contexto de Pedido de Compra Cancelado. |
+| `Data.Subscriptions[].CancellationReason` | `string` | **a confirmar** — significado e valores possíveis neste evento; confirmar se é texto livre ou lista de motivos. |
+
+### Oferta — `Data.Offer`
+
+Oferta relacionada à compra cancelada.
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `Data.Offer` | `object` | Dados da oferta. |
+| `Data.Offer.Id` | `string` | Identificador da oferta. |
+| `Data.Offer.Name` | `string` | Nome da oferta. |
+| `Data.Offer.Url` | `string` | Link da oferta ou do checkout. |
+
+### Rastreamento — `Data.Utm`
+
+UTMs e demais parâmetros de rastreamento capturados na URL do pagamento associado à compra.
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `Data.Utm` | `object` | Agrupa os parâmetros de rastreamento. |
+| `Data.Utm.UtmSource` | `string` | Valor de `utm_source`: origem do tráfego. |
+| `Data.Utm.UtmMedium` | `string` | Valor de `utm_medium`: meio de divulgação. |
+| `Data.Utm.UtmCampaign` | `string` | Valor de `utm_campaign`: campanha. |
+| `Data.Utm.UtmTerm` | `string` | Valor de `utm_term`: termo de rastreamento. |
+| `Data.Utm.UtmContent` | `string` | Valor de `utm_content`: conteúdo ou variação de divulgação. |
+| `Data.Utm.Src` | `string` | Valor do parâmetro adicional `src`. No exemplo, `blog`. |
+| `Data.Utm.Sck` | `string` | Valor do parâmetro adicional `sck`. No exemplo, `form_button`. |
+| `Data.Utm.Vtid` | `string` | Valor do parâmetro `vtid`, utilizado no rastreamento da VTurb. |
+
+### Dispositivo — `Data.DeviceInfo`
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `Data.DeviceInfo` | `object` | Dados do dispositivo do usuário. |
+| `Data.DeviceInfo.UserAgent` | `string` | Identificação do navegador e do ambiente do dispositivo, conforme o User-Agent recebido. |
+| `Data.DeviceInfo.ip` | `string` | Endereço IP do usuário. A chave `ip` é escrita em letras minúsculas. |
+
+## Exemplos de payload
+
+Os três exemplos abaixo são **eventos de teste** (`IsTest: true`), para cartão, boleto e Pix.
+
+:::note Valores ilustrativos
+Os valores de preço e comissão são fictícios e ilustram a estrutura do payload.
+:::
+
+<Tabs>
+
+<TabItem value="credit_card" label="Cartão">
+
+```json
+{
+  "Id": "51a906e0-23ee-4ea3-84a5-a4948facb66d",
+  "IsTest": true,
+  "Event": "Purchase_Request_Canceled",
+  "CreatedAt": "2026-10-22T16:05:18",
+  "Data": {
+    "Products": [
+      {
+        "Id": "a19d6d30-7f0c-4ea6-ab05-c4d3fc495cbb",
+        "Name": "Meu Produto Lastlink",
+        "Quantity": 1
+      }
+    ],
+    "Buyer": {
+      "Id": "92d80e79-5755-4e20-84ba-e939b883dd77",
+      "Email": "test.email@mail.com",
+      "Name": "Moises Pereira",
+      "PhoneNumber": "+5500987645312",
+      "Document": "663.614.400-95",
+      "Address": {
+        "ZipCode": "15056-131",
+        "Street": "Rua Mariana Pereira Butinhon",
+        "StreetNumber": "1",
+        "Complement": "Complemento",
+        "District": "Village Damha Rio Preto III",
+        "City": "São Paulo",
+        "State": "São Paulo"
+      }
+    },
+    "Seller": {
+      "Id": "2e39a390-7ca4-4537-ae49-d3bc54971cdb",
+      "Email": "hidway@outlook.com"
+    },
+    "Commissions": [
+      {
+        "Value": 0.99,
+        "Source": "MARKETPLACE"
+      },
+      {
+        "Value": 15.25,
+        "Source": "PRODUCER"
+      },
+      {
+        "Value": 10.5,
+        "Source": "COPRODUCER",
+        "Details": [
+          {
+            "ReceiverId": "5b88260e-a989-4716-9f97-1ea98a2af75d",
+            "Amount": 7.5,
+            "ReceiverEmail": "coproducer1@domain.com"
+          },
+          {
+            "ReceiverId": "784d6bba-8292-4755-a31f-18e454a356b2",
+            "Amount": 7.75,
+            "ReceiverEmail": "coproducer2@domain.com"
+          }
+        ]
+      },
+      {
+        "Value": 5.25,
+        "Source": "AFFILIATE"
+      }
+    ],
+    "Purchase": {
+      "PaymentId": "8f70110d-42fb-4345-9ecd-af4a988c6e9a",
+      "Recurrency": 1,
+      "PaymentDate": "2026-10-22T16:05:18.8894362Z",
+      "NextBilling": "2026-11-22T16:05:18.8894375Z",
+      "OriginalPrice": {
+        "Value": 12.5
+      },
+      "Price": {
+        "Value": 12.5
+      },
+      "Payment": {
+        "NumberOfInstallments": 12,
+        "PaymentMethod": "credit_card"
+      },
+      "Affiliate": {
+        "Id": "cb052e4f-1011-40d0-aefa-c828b6f30ca8",
+        "Email": "test.affiliate@mail.com"
+      },
+      "InvoiceUrl": "https://invoices.lastlink.com/00000000-0000-0000-0000-000000000000-test",
+      "OriginUrl": "https://lastlink.com/p/AAAAAAAAA/checkout-payment?utm_source=abcd&utm_medium=efgh&src=blog&sck=form_button&vtid=00001-000002-000102",
+      "IsUpsell": true,
+      "IsSmartInstallment": true,
+      "SmartInstallment": {
+        "CurrentInstallment": 2,
+        "TotalInstallments": 2,
+        "Type": "recovery"
+      }
+    },
+    "Subscriptions": [
+      {
+        "Id": "54464228-455e-4c96-8c72-c078456efeb4",
+        "ProductId": "a19d6d30-7f0c-4ea6-ab05-c4d3fc495cbb",
+        "CanceledDate": "2026-10-22T16:05:18.8895213Z",
+        "CancellationReason": "Teste de cancelamento"
+      }
+    ],
+    "Offer": {
+      "Id": "c982b766-e9c7-4a09-b3cc-bb412ed6b37d",
+      "Name": "Minha Oferta Lastlink",
+      "Url": "https://lastlink.com/p/C553E93AF"
+    },
+    "Utm": {
+      "UtmSource": "utm_source",
+      "UtmMedium": "utm_medium",
+      "UtmCampaign": "utm_campaign",
+      "UtmTerm": "utm_term",
+      "UtmContent": "utm_content",
+      "Src": "blog",
+      "Sck": "form_button",
+      "Vtid": "00001-000002-000102"
+    },
+    "DeviceInfo": {
+      "UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
+      "ip": "3.212.6.212"
+    }
+  }
+}
+```
+
+</TabItem>
+
+<TabItem value="bankslip" label="Boleto">
+
+```json
+{
+  "Id": "158064b3-8b52-4cf2-9821-d935e18a5f16",
+  "IsTest": true,
+  "Event": "Purchase_Request_Canceled",
+  "CreatedAt": "2026-10-22T16:05:18",
+  "Data": {
+    "Products": [
+      {
+        "Id": "a19d6d30-7f0c-4ea6-ab05-c4d3fc495cbb",
+        "Name": "Meu Produto Lastlink",
+        "Quantity": 1
+      }
+    ],
+    "Buyer": {
+      "Id": "112e6ea3-ee1d-4523-9ec2-b75998c11237",
+      "Email": "test.email@mail.com",
+      "Name": "Moises Pereira",
+      "PhoneNumber": "+5500987645312",
+      "Document": "663.614.400-95",
+      "Address": {
+        "ZipCode": "15056-131",
+        "Street": "Rua Mariana Pereira Butinhon",
+        "StreetNumber": "1",
+        "Complement": "Complemento",
+        "District": "Village Damha Rio Preto III",
+        "City": "São Paulo",
+        "State": "São Paulo"
+      }
+    },
+    "Seller": {
+      "Id": "2e39a390-7ca4-4537-ae49-d3bc54971cdb",
+      "Email": "hidway@outlook.com"
+    },
+    "Commissions": [
+      {
+        "Value": 0.99,
+        "Source": "MARKETPLACE"
+      },
+      {
+        "Value": 15.25,
+        "Source": "PRODUCER"
+      },
+      {
+        "Value": 10.5,
+        "Source": "COPRODUCER",
+        "Details": [
+          {
+            "ReceiverId": "6566dfc3-b250-45bd-8008-8a518afcc063",
+            "Amount": 7.5,
+            "ReceiverEmail": "coproducer1@domain.com"
+          },
+          {
+            "ReceiverId": "ce8fb4ea-7c05-4769-9ed2-b3ab7f54b9aa",
+            "Amount": 7.75,
+            "ReceiverEmail": "coproducer2@domain.com"
+          }
+        ]
+      },
+      {
+        "Value": 5.25,
+        "Source": "AFFILIATE"
+      }
+    ],
+    "Purchase": {
+      "PaymentId": "abbb677e-a824-47b3-8557-bcf9ca09a3ce",
+      "Recurrency": 1,
+      "PaymentDate": "2026-10-22T16:05:18.9021137Z",
+      "NextBilling": "2026-11-22T16:05:18.9021146Z",
+      "OriginalPrice": {
+        "Value": 12.5
+      },
+      "Price": {
+        "Value": 12.5
+      },
+      "Payment": {
+        "NumberOfInstallments": 1,
+        "PaymentMethod": "bankslip"
+      },
+      "Affiliate": {
+        "Id": "d05b6cfa-4931-4a8e-908f-2a1c71b18684",
+        "Email": "test.affiliate@mail.com"
+      },
+      "BankSlip": {
+        "DigitableLine": "34191.09008 63571.277447 91020.150008 5 12340000000000",
+        "BarCodeData": "341911902000635712774479102015000812340000000000",
+        "BarCode": "https://barcode.com.br/barcode"
+      },
+      "InvoiceUrl": "https://invoices.lastlink.com/00000000-0000-0000-0000-000000000000-test",
+      "OriginUrl": "https://lastlink.com/p/AAAAAAAAA/checkout-payment?utm_source=abcd&utm_medium=efgh&src=blog&sck=form_button&vtid=00001-000002-000102",
+      "IsUpsell": true,
+      "IsSmartInstallment": false
+    },
+    "Subscriptions": [
+      {
+        "Id": "f4ea3015-ce70-4d3d-954e-7860194e65bb",
+        "ProductId": "a19d6d30-7f0c-4ea6-ab05-c4d3fc495cbb",
+        "CanceledDate": "2026-10-22T16:05:18.9021983Z",
+        "CancellationReason": "Teste de cancelamento"
+      }
+    ],
+    "Offer": {
+      "Id": "c982b766-e9c7-4a09-b3cc-bb412ed6b37d",
+      "Name": "Minha Oferta Lastlink",
+      "Url": "https://lastlink.com/p/C553E93AF"
+    },
+    "Utm": {
+      "UtmSource": "utm_source",
+      "UtmMedium": "utm_medium",
+      "UtmCampaign": "utm_campaign",
+      "UtmTerm": "utm_term",
+      "UtmContent": "utm_content",
+      "Src": "blog",
+      "Sck": "form_button",
+      "Vtid": "00001-000002-000102"
+    },
+    "DeviceInfo": {
+      "UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
+      "ip": "3.212.6.212"
+    }
+  }
+}
+```
+
+</TabItem>
+
+<TabItem value="pix" label="Pix">
+
+```json
+{
+  "Id": "6c92a583-b6c9-434b-9fa3-6d0b118dbd3e",
+  "IsTest": true,
+  "Event": "Purchase_Request_Canceled",
+  "CreatedAt": "2026-10-22T16:05:18",
+  "Data": {
+    "Products": [
+      {
+        "Id": "a19d6d30-7f0c-4ea6-ab05-c4d3fc495cbb",
+        "Name": "Meu Produto Lastlink",
+        "Quantity": 1
+      }
+    ],
+    "Buyer": {
+      "Id": "b31246c2-a0f6-4c50-9ef1-df4536dfc3f0",
+      "Email": "test.email@mail.com",
+      "Name": "Moises Pereira",
+      "PhoneNumber": "+5500987645312",
+      "Document": "663.614.400-95",
+      "Address": {
+        "ZipCode": "15056-131",
+        "Street": "Rua Mariana Pereira Butinhon",
+        "StreetNumber": "1",
+        "Complement": "Complemento",
+        "District": "Village Damha Rio Preto III",
+        "City": "São Paulo",
+        "State": "São Paulo"
+      }
+    },
+    "Seller": {
+      "Id": "2e39a390-7ca4-4537-ae49-d3bc54971cdb",
+      "Email": "hidway@outlook.com"
+    },
+    "Commissions": [
+      {
+        "Value": 0.99,
+        "Source": "MARKETPLACE"
+      },
+      {
+        "Value": 15.25,
+        "Source": "PRODUCER"
+      },
+      {
+        "Value": 10.5,
+        "Source": "COPRODUCER",
+        "Details": [
+          {
+            "ReceiverId": "b7a21b84-a2b9-4280-8f76-884cedb7426d",
+            "Amount": 7.5,
+            "ReceiverEmail": "coproducer1@domain.com"
+          },
+          {
+            "ReceiverId": "c2f2ebcb-bc1a-4642-a7d4-9acb64de5c9a",
+            "Amount": 7.75,
+            "ReceiverEmail": "coproducer2@domain.com"
+          }
+        ]
+      },
+      {
+        "Value": 5.25,
+        "Source": "AFFILIATE"
+      }
+    ],
+    "Purchase": {
+      "PaymentId": "03256c0a-19ca-4829-bee8-f3d280eb0c1b",
+      "Recurrency": 1,
+      "PaymentDate": "2026-10-22T16:05:18.9292266Z",
+      "NextBilling": "2026-11-22T16:05:18.929228Z",
+      "OriginalPrice": {
+        "Value": 12.5
+      },
+      "Price": {
+        "Value": 12.5
+      },
+      "Payment": {
+        "NumberOfInstallments": 1,
+        "PaymentMethod": "pix"
+      },
+      "Affiliate": {
+        "Id": "4c7eab35-54fd-4122-bca0-c623aa616eff",
+        "Email": "test.affiliate@mail.com"
+      },
+      "Pix": {
+        "QrCode": "https://pix.com.br/qrcode",
+        "QrCodeText": "12341234134134234@qweruiy1234231@lastlink.com"
+      },
+      "InvoiceUrl": "https://invoices.lastlink.com/00000000-0000-0000-0000-000000000000-test",
+      "OriginUrl": "https://lastlink.com/p/AAAAAAAAA/checkout-payment?utm_source=abcd&utm_medium=efgh&src=blog&sck=form_button&vtid=00001-000002-000102",
+      "IsUpsell": false,
+      "IsSmartInstallment": false
+    },
+    "Subscriptions": [
+      {
+        "Id": "0e749035-da45-4d7a-884c-3857a31285a6",
+        "ProductId": "a19d6d30-7f0c-4ea6-ab05-c4d3fc495cbb",
+        "CanceledDate": "2026-10-22T16:05:18.9293206Z",
+        "CancellationReason": "Teste de cancelamento"
+      }
+    ],
+    "Offer": {
+      "Id": "c982b766-e9c7-4a09-b3cc-bb412ed6b37d",
+      "Name": "Minha Oferta Lastlink",
+      "Url": "https://lastlink.com/p/C553E93AF"
+    },
+    "Utm": {
+      "UtmSource": "utm_source",
+      "UtmMedium": "utm_medium",
+      "UtmCampaign": "utm_campaign",
+      "UtmTerm": "utm_term",
+      "UtmContent": "utm_content",
+      "Src": "blog",
+      "Sck": "form_button",
+      "Vtid": "00001-000002-000102"
+    },
+    "DeviceInfo": {
+      "UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
+      "ip": "3.212.6.212"
+    }
+  }
+}
+```
+
+</TabItem>
+
+</Tabs>
+

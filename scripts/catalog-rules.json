@@ -1,0 +1,235 @@
+{
+  "_http": {
+    "method": "POST",
+    "body": "JSON",
+    "headers": [
+      {
+        "name": "accept",
+        "example": "application/json",
+        "description": "Tipo de conteúdo aceito na resposta."
+      },
+      {
+        "name": "accept-encoding",
+        "example": "gzip, br",
+        "description": "Codificações de conteúdo aceitas na resposta."
+      },
+      {
+        "name": "content-length",
+        "example": "437",
+        "description": "Tamanho do corpo da requisição em bytes; varia conforme o payload."
+      },
+      {
+        "name": "content-type",
+        "example": "application/json; charset=utf-8",
+        "description": "Tipo de conteúdo e codificação de caracteres do corpo da requisição."
+      },
+      {
+        "name": "sentry-trace",
+        "example": "63ffad6d261917f008d33947dccd53cc-346ef3878777f45c-1",
+        "description": "Header de rastreamento observado no exemplo de recebimento."
+      },
+      {
+        "name": "traceparent",
+        "example": "00-63ffad6d261917f008d33947dccd53cc-346ef3878777f45c-01",
+        "description": "Contexto de rastreamento da requisição observado no exemplo."
+      },
+      {
+        "name": "x-forwarded-for",
+        "example": "100.49.145.48",
+        "description": "Informação de IP encaminhada na requisição observada."
+      },
+      {
+        "name": "x-forwarded-proto",
+        "example": "https",
+        "description": "Protocolo informado no encaminhamento da requisição observada."
+      },
+      {
+        "name": "x-lastlink-token",
+        "example": "SEU_TOKEN_DA_INTEGRACAO",
+        "description": "Token disponibilizado pela Lastlink na tela de integração e enviado no header dos webhooks. Pode ser armazenado como secret e comparado com o valor recebido para validar a chamada."
+      }
+    ]
+  },
+  "Id": {
+    "description": "Identificador do webhook."
+  },
+  "Event": {
+    "description": "Nome do evento enviado no webhook.",
+    "conditions": "Consulte [Gatilhos dos eventos](./gatilhos-dos-eventos.md) para os fluxos e restrições por meio de pagamento. Purchase_Order_Confirmed informa o primeiro pagamento confirmado; Recurrent_Payment, pagamentos do segundo em diante em assinaturas. Refund_Requested só informa pedido do membro encaminhado à avaliação manual. Refund_Period_Over exige pagamento aprovado no término da garantia de 7, 15 ou 30 dias configurada no produto e também se aplica a renovações. Subscription_Renewal_Pending: Pix e boleto, cerca de 10 dias antes; cartão, no vencimento e antes da cobrança; Pix Automático com autorização ativa, somente se o débito falhar. Notify_Active_Member não tem disparador em produção."
+  },
+  "CreatedAt": {
+    "description": "Data e hora em que o evento foi criado."
+  },
+  "Data": {
+    "description": "Dados da operação relacionados ao evento."
+  },
+  "Data.Products": {
+    "description": "Lista dos produtos envolvidos na operação."
+  },
+  "Data.Product": {
+    "description": "Produto relacionado ao evento de acesso."
+  },
+  "Data.Products[].Quantity": {
+    "description": "Quantidade do produto na operação, útil para casos como ingressos. No carrinho abandonado, representa a quantidade no checkout; não indica uma compra concluída."
+  },
+  "Data.Buyer": {
+    "description": "Dados do usuário associado ao checkout ou à compra."
+  },
+  "Data.Buyer.Email": {
+    "description": "E-mail informado pelo usuário. É o dado mínimo e obrigatório no checkout."
+  },
+  "Data.Buyer.Name": {
+    "conditions": "Enviado quando o campo estiver habilitado e preenchido no checkout."
+  },
+  "Data.Buyer.PhoneNumber": {
+    "conditions": "Enviado quando o campo estiver habilitado e preenchido no checkout."
+  },
+  "Data.Buyer.Document": {
+    "conditions": "CPF informado no checkout, conforme habilitação e preenchimento do campo."
+  },
+  "Data.Buyer.Address": {
+    "conditions": "Os campos de endereço dependem da habilitação pelo produtor e do preenchimento no checkout."
+  },
+  "Data.Commissions": {
+    "conditions": "Os valores dos exemplos são fictícios. A geração da fatura não confirma pagamento ou repasse."
+  },
+  "Data.Commissions[].Source": {
+    "values": "`MARKETPLACE` = Lastlink; `PRODUCER` = produtor; `COPRODUCER` = coprodutor; `AFFILIATE` = afiliado."
+  },
+  "Data.Commissions[].Details": {
+    "conditions": "Detalhamento dos coprodutores envolvidos na operação."
+  },
+  "Data.Purchase.PaymentDate": {
+    "description": "Data e hora do pagamento relacionado ao evento. Em reembolso, chargeback e término da garantia, refere-se ao pagamento original."
+  },
+  "Data.Purchase.Price.Value": {
+    "description": "Valor final da compra, considerando descontos e incluindo juros quando aplicáveis.",
+    "conditions": "Os juros já estão incluídos no valor final e não devem ser somados novamente ao total. Consulte as [Regras](./regras.md#datas-e-valores-do-pagamento)."
+  },
+  "Data.Purchase.Recurrency": {
+    "values": "`0` = compra única; `1` = mensal; `3` = trimestral; `6` = semestral; `12` = anual.",
+    "conditions": "No evento `Recurrent_Payment`, exclusivo de assinaturas, os valores aplicáveis são `1`, `3`, `6` e `12`; compras únicas (`0`) não disparam esse evento."
+  },
+  "Data.Purchase.NextBilling": {
+    "description": "Vencimento da próxima cobrança, quando houver.",
+    "values": "Data da próxima cobrança; `null` quando `Recurrency` é `0` (compra única).",
+    "conditions": "Pode acompanhar Fatura Criada e Assinatura Pendente de Renovação quando houver uma próxima cobrança; sua presença não confirma pagamento. Consulte as [Regras](./regras.md#datas-e-valores-do-pagamento)."
+  },
+  "Data.Purchase.Payment.NumberOfInstallments": {
+    "values": "Número de parcelas, de `1` a `12`."
+  },
+  "Data.Purchase.Payment.PaymentMethod": {
+    "values": "`pix` = Pix; `bankslip` = boleto; `credit_card` = cartão de crédito.",
+    "conditions": "Em Subscription_Renewal_Pending, Pix e boleto entram cerca de 10 dias antes do vencimento, com dados para pagamento; cartão, no vencimento e antes da cobrança, inclusive se será aprovado. Pix Automático com autorização ativa só gera a notificação se o débito falhar. Consulte as [Regras](./regras.md#renovação-de-assinaturas)."
+  },
+  "Data.Purchase.Coupon": {
+    "conditions": "Cupom aplicado à compra, quando houver."
+  },
+  "Data.Purchase.CouponAmount": {
+    "conditions": "Valor do desconto aplicado pelo cupom."
+  },
+  "Data.Purchase.Affiliate": {
+    "conditions": "Dados do afiliado associado à operação, quando houver."
+  },
+  "Data.Purchase.Pix": {
+    "conditions": "Dados específicos do pagamento com `PaymentMethod: pix`."
+  },
+  "Data.Purchase.Pix.QrCode": {
+    "description": "URL da imagem do QR Code do Pix."
+  },
+  "Data.Purchase.BankSlip": {
+    "conditions": "Dados específicos do pagamento com `PaymentMethod: bankslip`; aparecem no lugar de `Pix`."
+  },
+  "Data.Purchase.InvoiceUrl": {
+    "description": "Link da página de fatura da Lastlink associada à operação."
+  },
+  "Data.Purchase.IsUpsell": {
+    "description": "Indica se a operação teve origem em uma venda de upsell."
+  },
+  "Data.Purchase.IsSmartInstallment": {
+    "description": "Indica se a operação utiliza parcelamento inteligente.",
+    "conditions": "O objeto `SmartInstallment` só é enviado quando `IsSmartInstallment` é `true`. Com `false`, o objeto não é enviado. Consulte as [Regras](./regras.md#parcelamento-inteligente)."
+  },
+  "Data.Purchase.SmartInstallment": {
+    "conditions": "Objeto condicional: só é enviado quando `Data.Purchase.IsSmartInstallment` é `true`; com `false`, não é enviado. Pode estar ausente conforme a operação. Consulte as [Regras](./regras.md#parcelamento-inteligente)."
+  },
+  "Data.Purchase.SmartInstallment.CurrentInstallment": {
+    "description": "Parcela atual do parcelamento inteligente, referente à fatura ou ao pagamento informado no evento."
+  },
+  "Data.Purchase.SmartInstallment.Type": {
+    "values": "`direct` = parcelamento inteligente escolhido como primeira opção; `recovery` = operação recuperada com parcelamento inteligente após falha na cobrança."
+  },
+  "Data.Offer": {
+    "description": "Oferta associada ao checkout ou à compra."
+  },
+  "Data.Utm": {
+    "description": "Parâmetros de rastreamento relacionados à operação.",
+    "conditions": "Em Carrinho Abandonado, são os parâmetros na URL no momento do abandono; em Fatura Criada, os da geração da fatura; em Compra Completa, os capturados para aquele pagamento. Em Pagamento Estornado, são os dados capturados para o pagamento original que sofreu o chargeback. Em Reembolso solicitado, são os parâmetros da URL do pagamento original relacionado à solicitação. Em Pagamento Reembolsado, são os parâmetros da URL do pagamento original reembolsado. Em Pagamento de Renovação Efetuado, são os parâmetros da URL do pagamento da renovação. Em Periodo de Reembolso Terminado, são os parâmetros da URL do pagamento original da compra. Em Assinatura Cancelada, são os parâmetros da URL do pagamento associado à assinatura. Em Assinatura Expirada, são os parâmetros da URL do pagamento associado à assinatura. Em Assinatura Pendente de Renovação, são os parâmetros da URL do pagamento associado à assinatura. Em Pedido de Compra Cancelado, são os parâmetros capturados na URL do pagamento associado à compra. Em Pedido de Compra Expirada, são os parâmetros capturados na URL do pagamento associado à compra."
+  },
+  "Data.Purchase.ChargebackDate": {
+    "description": "Em `Payment_Chargeback`, data e hora do chargeback confirmado. Em `Refund_Requested` e `Payment_Refund`, campo exclusivo dos exemplos de teste; ausente nos eventos reais.",
+    "values": "`Payment_Chargeback`: data e hora do chargeback confirmado. `Refund_Requested` e `Payment_Refund`: presente apenas com `IsTest: true`; não enviado com `IsTest: false`.",
+    "eventDefinitions": {
+      "Refund_Requested": {
+        "type": "`string`",
+        "description": "Campo presente apenas nos exemplos de teste (`IsTest: true`); não enviado nos eventos reais (`IsTest: false`).",
+        "source": "docs/debitos-tecnicos.md#bug-001"
+      },
+      "Payment_Refund": {
+        "type": "`string`",
+        "description": "Campo presente apenas nos exemplos de teste (`IsTest: true`); não enviado nos eventos reais (`IsTest: false`).",
+        "source": "docs/debitos-tecnicos.md#bug-001"
+      }
+    }
+  },
+  "Data.Subscriptions[].CanceledDate": {
+    "description": "Data e hora em que a assinatura foi cancelada."
+  },
+  "Data.Subscriptions[].CancellationReason": {
+    "description": "Motivo informado no cancelamento."
+  },
+  "Data.Subscriptions[].Cycle": {
+    "description": "Ciclo da assinatura, usado para acompanhar suas renovações.",
+    "conditions": "Refere-se à assinatura identificada no mesmo item da lista. Não confundir com a periodicidade em Recurrency nem com a parcela de SmartInstallment.CurrentInstallment. Consulte as [Regras](./regras.md#ciclo-da-assinatura)."
+  },
+  "Data.Subscriptions": {
+    "conditions": "No evento `Subscription_Canceled`, uma compra pode continuar aprovada enquanto a assinatura está cancelada: o ciclo atual pode estar pago e não haverá cobrança do próximo ciclo."
+  },
+  "Data.Subscriptions[].ExpiredDate": {
+    "description": "Data e hora em que a assinatura passou para o status expirada."
+  },
+  "Data.Action": {
+    "description": "Ação a ser realizada sobre o acesso ao produto.",
+    "values": "`Add` = liberar o acesso; `Remove` = remover o acesso. Grafia conforme os payloads de `Subscription_Product_Access`.",
+    "conditions": "Em Subscription_Product_Access, acompanha o início ou o fim de acesso pago vinculado à assinatura, junto com Product_Access_Started ou Product_Access_Ended. Convidados não geram este evento. Add libera e Remove remove o acesso; a correspondência não define ordem de entrega. Consulte as [Regras](./regras.md#liberação-e-remoção-de-acesso)."
+  },
+  "Data.Subscription": {
+    "description": "Dados da assinatura associada ao acesso, enviados como objeto singular em `Subscription_Product_Access`."
+  },
+  "Data.Subscription.ExpiredDate": {
+    "description": "Data e hora em que a assinatura expirou, quando enviado.",
+    "conditions": "Nos exemplos de `Subscription_Product_Access`, presente com `Action: Remove` e ausente com `Action: Add`. Considere a possível ausência do campo."
+  },
+  "Data.AccessType": {
+    "description": "Tipo de acesso do membro ao produto.",
+    "values": "Em `Product_Access_Started` e `Product_Access_Ended`: `Paid` = membro que realizou uma compra; `Guest` = membro convidado com acesso gratuito. Os valores têm inicial maiúscula.",
+    "conditions": "Consulte as [regras de início](./regras.md#início-do-acesso-ao-produto) e de [fim do acesso](./regras.md#fim-do-acesso-ao-produto)."
+  },
+  "Data.Member": {
+    "description": "Dados do membro associado ao acesso; representa o usuário identificado como Buyer nos eventos que utilizam esse objeto."
+  },
+  "Data.Member.Email": {
+    "description": "E-mail do membro, enviado como texto simples."
+  },
+  "Data.AccessStartedAt": {
+    "description": "Data e hora de início do acesso ao produto."
+  },
+  "Data.AccessEndedAt": {
+    "description": "Em `Product_Access_Started`, data e hora em que o acesso termina. Em `Product_Access_Ended`, data e hora em que o acesso efetivamente acabou.",
+    "conditions": "Em `Product_Access_Started`, exclusivo de membros convidados (`Data.AccessType: Guest`). Em `Product_Access_Ended`, informa o encerramento do acesso, inclusive para `Paid`, conforme o exemplo."
+  },
+  "Data.SubscriptionId": {
+    "description": "Identificador da assinatura.",
+    "conditions": "Em `Product_Access_Started` e `Product_Access_Ended`, enviado somente com `Data.AccessType: Paid`. Membros Guest não possuem assinatura e não recebem esse campo."
+  }
+}

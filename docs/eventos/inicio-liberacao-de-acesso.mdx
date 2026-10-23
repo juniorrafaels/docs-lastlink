@@ -1,0 +1,153 @@
+---
+sidebar_position: 15
+title: Início liberação de acesso
+description: Campos e exemplos do webhook Product_Access_Started da Lastlink para acessos pagos e convidados.
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Início liberação de acesso
+
+O evento `Product_Access_Started` é enviado quando se inicia o acesso de um membro a um produto. O acesso pode ser decorrente de uma compra (`Paid`) ou de um convite com acesso gratuito (`Guest`).
+
+## Quando é disparado
+
+O evento é disparado quando o **acesso à comunidade é criado**, por:
+
+- Pagamento confirmado.
+- Convite pela lista de convidados.
+- Order bump ou bundle; cada produto gera seu próprio evento de acesso.
+
+A renovação não gera novamente o evento de criação de acesso.
+
+### Meios de pagamento e condições
+
+Não há filtro por meio de pagamento. O acesso pago é criado na confirmação: cartão quando aprovado, Pix quando o pagamento é recebido e boleto quando compensado. O acesso por convite usa `AccessType: Guest`, sem assinatura.
+
+Consulte também o [resumo dos gatilhos](../gatilhos-dos-eventos.md#início-liberação-de-acesso) e as [regras de distribuição e entrega](../regras.md#distribuição-dos-eventos).
+
+## Tipos de acesso
+
+Os valores de `Data.AccessType` têm inicial maiúscula, conforme enviados no JSON.
+
+| Valor | Significado | Campos condicionais |
+| --- | --- | --- |
+| `Paid` | Membro que realizou uma compra. | `Data.SubscriptionId` identifica a assinatura. |
+| `Guest` | Membro convidado por meio de acesso gratuito. | Não possui `Data.SubscriptionId`. `Data.AccessEndedAt` é exclusivo de membros convidados. |
+
+Consulte também as [regras de início do acesso ao produto](../regras.md#início-do-acesso-ao-produto).
+
+Quando o acesso encerra, é enviado o evento [Fim liberação de acesso](./fim-liberacao-de-acesso.md) (`Product_Access_Ended`).
+
+## Como interpretar este evento
+
+Este payload descreve o vínculo de acesso entre um membro e um produto: `Data.Member.Id` identifica a pessoa e `Data.Product.Id` identifica o produto. `Data.Product` é um objeto único, diferente da lista `Products` dos eventos de compra.
+
+Leia `Data.AccessType` para distinguir `Paid` de `Guest`. Para `Paid`, use `Data.SubscriptionId` para relacionar o acesso à assinatura. Para `Guest`, trate o acesso gratuito sem exigir um identificador de assinatura. `Data.AccessStartedAt` informa o início; o `AccessEndedAt` do convidado informa quando esse acesso termina.
+
+## Estrutura do payload
+
+Os nomes dos campos correspondem às chaves do JSON, incluindo letras maiúsculas e minúsculas. Os campos condicionais devem ser lidos considerando sua presença no evento recebido.
+
+### Campos principais
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `Id` | `string` | Identificador do webhook. |
+| `IsTest` | `boolean` | Indica se é um evento de teste: `true` para teste e `false` para um evento real. |
+| `Event` | `string` | Nome do evento. Nesta página, o valor é `Product_Access_Started`. |
+| `CreatedAt` | `string` | Data e hora em que o evento foi criado. |
+| `Data` | `object` | Agrupa os dados do produto, do membro e do acesso iniciado. |
+
+### Produto — `Data.Product`
+
+Neste evento, `Product` é um objeto singular.
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `Data.Product` | `object` | Produto ao qual o acesso foi iniciado. |
+| `Data.Product.Id` | `string` | Identificador do produto. |
+| `Data.Product.Name` | `string` | Nome do produto. |
+| `Data.Product.Quantity` | `number` | Quantidade do produto na operação, útil para casos como ingressos. |
+
+### Membro — `Data.Member`
+
+`Member` representa o usuário associado ao acesso. É o mesmo usuário representado por `Buyer` nos eventos que utilizam esse objeto; neste evento, a chave enviada é `Member`.
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `Data.Member` | `object` | Dados do membro associado ao acesso. |
+| `Data.Member.Id` | `string` | Identificador do membro. |
+| `Data.Member.Email` | `string` | E-mail do membro, enviado como texto simples. |
+
+### Acesso
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `Data.AccessType` | `string` | Tipo de acesso: `Paid` para quem realizou uma compra; `Guest` para convidados com acesso gratuito. |
+| `Data.AccessStartedAt` | `string` | Data e hora de início do acesso ao produto. |
+| `Data.AccessEndedAt` | `string` | Data e hora em que o acesso termina. Campo exclusivo de membros convidados (`Guest`). |
+| `Data.SubscriptionId` | `string` | Identificador da assinatura, enviado somente para `Paid`. Membros `Guest` não possuem assinatura e não recebem esse campo. |
+
+## Exemplos de payload
+
+Os dois exemplos abaixo são eventos de teste (`IsTest: true`), para um membro convidado e um membro que realizou uma compra.
+
+<Tabs>
+
+<TabItem value="Guest" label="Convidado (Guest)">
+
+```json
+{
+  "Id": "c1f5f700-66fb-426f-9629-2a8d264889d8",
+  "IsTest": true,
+  "Event": "Product_Access_Started",
+  "CreatedAt": "2026-10-22T17:55:21",
+  "Data": {
+    "Product": {
+      "Id": "a19d6d30-7f0c-4ea6-ab05-c4d3fc495cbb",
+      "Name": "Meu Produto Lastlink",
+      "Quantity": 1
+    },
+    "Member": {
+      "Id": "c17d7468-1acb-4227-a7f6-20e37d87ce4e",
+      "Email": "contato@lastlink.com"
+    },
+    "AccessType": "Guest",
+    "AccessStartedAt": "2026-10-22T17:55:21.9688505Z",
+    "AccessEndedAt": "2027-10-22T17:55:21.9688507Z"
+  }
+}
+```
+
+</TabItem>
+
+<TabItem value="Paid" label="Pago (Paid)">
+
+```json
+{
+  "Id": "aad9d249-da9f-48e4-9129-924844953f94",
+  "IsTest": true,
+  "Event": "Product_Access_Started",
+  "CreatedAt": "2026-10-22T17:55:21",
+  "Data": {
+    "Product": {
+      "Id": "a19d6d30-7f0c-4ea6-ab05-c4d3fc495cbb",
+      "Name": "Meu Produto Lastlink",
+      "Quantity": 1
+    },
+    "Member": {
+      "Id": "ae122f28-25ed-4a04-aaed-f25bc0727b50",
+      "Email": "contato@lastlink.com"
+    },
+    "AccessType": "Paid",
+    "AccessStartedAt": "2026-10-22T17:55:21.9568303Z",
+    "SubscriptionId": "1744ff31-3f7f-4a29-9ee1-ad7734213f25"
+  }
+}
+```
+
+</TabItem>
+
+</Tabs>

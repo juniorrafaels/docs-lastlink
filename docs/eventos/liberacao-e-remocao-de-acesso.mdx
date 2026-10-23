@@ -1,0 +1,206 @@
+---
+sidebar_position: 13
+title: Liberação e remoção de acesso
+description: Regras de disparo, campos e exemplos do webhook Subscription_Product_Access da Lastlink.
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Liberação e remoção de acesso
+
+O evento `Subscription_Product_Access` informa a liberação ou a remoção do acesso a um produto associado a uma assinatura. O campo `Data.Action` identifica a ação a ser realizada.
+
+## Quando é disparado
+
+O evento é enviado junto com os eventos específicos de início ou fim do acesso, **somente para acessos pagos vinculados a uma assinatura**:
+
+- `Add`: liberação, junto com `Product_Access_Started`.
+- `Remove`: remoção, junto com `Product_Access_Ended`.
+
+Convidados não geram `Subscription_Product_Access`. A correspondência entre os eventos descreve a mesma mudança de acesso; não estabelece ordem de entrega.
+
+### Meios de pagamento e condições
+
+Aplica-se a todos os meios de pagamento dos acessos pagos.
+
+Consulte também o [resumo dos gatilhos](../gatilhos-dos-eventos.md#liberação-e-remoção-de-acesso) e as [regras de distribuição e entrega](../regras.md#distribuição-dos-eventos).
+
+## Dados do comprador
+
+:::important Campos de formulário em Buyer
+O **e-mail é o dado mínimo e obrigatório** no checkout. Os demais dados de formulário dependem dos campos habilitados pelo produtor e preenchidos pelo usuário.
+
+Os campos de endereço só são enviados quando estiverem habilitados no formulário de checkout e tiverem sido preenchidos pelo usuário. O exemplo completo não significa que todos esses campos estarão presentes em todos os disparos.
+:::
+
+Consulte as [regras gerais de dados do comprador](../webhooks.md#dados-do-comprador-no-checkout).
+
+## Como interpretar este evento
+
+Direcione o tratamento pelo par `Event` e `Data.Action`: `Subscription_Product_Access` é o mesmo evento nas duas variações, e `Add` ou `Remove` define a mudança de acesso comunicada.
+
+`Data.Product` e `Data.Subscription` são objetos únicos. Relacione o produto por `Data.Product.Id` e `Data.Subscription.ProductId`, e use `Data.Subscription.Id` para localizar a assinatura. O identificador em `Data.Buyer.Id` representa o comprador, não a assinatura.
+
+Também existem eventos específicos de [Início liberação de acesso](./inicio-liberacao-de-acesso.mdx) e [Fim liberação de acesso](./fim-liberacao-de-acesso.md). Eles utilizam `Member` e `AccessType`; interprete cada formato pelo seu identificador de evento.
+
+## Estrutura do payload
+
+Os nomes dos campos correspondem às chaves do JSON, incluindo letras maiúsculas e minúsculas. Neste evento, `Data.Product` e `Data.Subscription` são objetos singulares.
+
+### Campos principais
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `Id` | `string` | Identificador do webhook. |
+| `IsTest` | `boolean` | Indica se é um evento de teste: `true` para teste e `false` para um evento real. |
+| `Event` | `string` | Nome do evento. Nesta página, o valor é `Subscription_Product_Access`. |
+| `CreatedAt` | `string` | Data e hora em que o evento foi criado. |
+| `Data` | `object` | Agrupa a ação e os dados do produto, comprador, vendedor e assinatura. |
+| `Data.Action` | `string` | Ação a ser realizada: `Add` para liberar o acesso; `Remove` para remover o acesso. |
+
+### Produto — `Data.Product`
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `Data.Product` | `object` | Produto relacionado à liberação ou remoção de acesso. |
+| `Data.Product.Id` | `string` | Identificador do produto. |
+| `Data.Product.Name` | `string` | Nome do produto. |
+| `Data.Product.Quantity` | `number` | Quantidade do produto na operação, útil para casos como ingressos. |
+
+### Comprador — `Data.Buyer`
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `Data.Buyer` | `object` | Dados do comprador associado ao acesso. |
+| `Data.Buyer.Id` | `string` | Identificador do usuário. |
+| `Data.Buyer.Email` | `string` | E-mail do comprador. Dado mínimo e obrigatório no checkout. |
+| `Data.Buyer.Name` | `string` | Nome do comprador, quando informado. |
+| `Data.Buyer.PhoneNumber` | `string` | Telefone do comprador, quando informado. |
+| `Data.Buyer.Document` | `string` | CPF do comprador, quando informado. |
+| `Data.Buyer.Address` | `object` | Endereço do comprador, enviado conforme a habilitação e o preenchimento dos campos no checkout. |
+| `Data.Buyer.Address.ZipCode` | `string` | CEP. |
+| `Data.Buyer.Address.Street` | `string` | Rua ou logradouro. |
+| `Data.Buyer.Address.StreetNumber` | `string` | Número do imóvel. |
+| `Data.Buyer.Address.Complement` | `string` | Complemento do endereço. |
+| `Data.Buyer.Address.District` | `string` | Bairro. |
+| `Data.Buyer.Address.City` | `string` | Cidade. |
+| `Data.Buyer.Address.State` | `string` | Estado. |
+
+### Vendedor — `Data.Seller`
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `Data.Seller` | `object` | Dados do vendedor. |
+| `Data.Seller.Id` | `string` | Identificador do vendedor. |
+| `Data.Seller.Email` | `string` | E-mail do vendedor. |
+
+### Assinatura — `Data.Subscription`
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `Data.Subscription` | `object` | Dados da assinatura associada ao acesso. |
+| `Data.Subscription.Id` | `string` | Identificador da assinatura associada ao vínculo de acesso. |
+| `Data.Subscription.ProductId` | `string` | Identificador do produto relacionado à assinatura; corresponde a `Data.Product.Id`. |
+| `Data.Subscription.ExpiredDate` | `string` | Data e hora em que a assinatura expirou, quando enviado. |
+
+Nos exemplos recebidos, `ExpiredDate` está presente na variação `Remove` e ausente na variação `Add`. A integração deve considerar que esse campo pode estar ausente antes de acessá-lo.
+
+## Exemplos de payload
+
+Os dois exemplos abaixo são eventos de teste (`IsTest: true`) e ilustram as ações de liberação e remoção.
+
+<Tabs>
+
+<TabItem value="Add" label="Liberação (Add)">
+
+```json
+{
+  "Id": "31196b42-b1df-4397-bc18-a6dd652a80b9",
+  "IsTest": true,
+  "Event": "Subscription_Product_Access",
+  "CreatedAt": "2026-10-22T17:23:34",
+  "Data": {
+    "Action": "Add",
+    "Product": {
+      "Id": "a19d6d30-7f0c-4ea6-ab05-c4d3fc495cbb",
+      "Name": "Meu Produto Lastlink",
+      "Quantity": 1
+    },
+    "Buyer": {
+      "Id": "418bd7de-900f-4b30-96e6-8d1ef20958de",
+      "Email": "test.email@mail.com",
+      "Name": "Moises Pereira",
+      "PhoneNumber": "+5500987645312",
+      "Document": "663.614.400-95",
+      "Address": {
+        "ZipCode": "15056-131",
+        "Street": "Rua Mariana Pereira Butinhon",
+        "StreetNumber": "1",
+        "Complement": "Complemento",
+        "District": "Village Damha Rio Preto III",
+        "City": "São Paulo",
+        "State": "São Paulo"
+      }
+    },
+    "Seller": {
+      "Id": "2e39a390-7ca4-4537-ae49-d3bc54971cdb",
+      "Email": "hidway@outlook.com"
+    },
+    "Subscription": {
+      "Id": "d10da042-91a4-4327-87fa-52aa5fcc8f04",
+      "ProductId": "a19d6d30-7f0c-4ea6-ab05-c4d3fc495cbb"
+    }
+  }
+}
+```
+
+</TabItem>
+
+<TabItem value="Remove" label="Remoção (Remove)">
+
+```json
+{
+  "Id": "d510921b-1447-4e9a-ade3-a85c79f84e30",
+  "IsTest": true,
+  "Event": "Subscription_Product_Access",
+  "CreatedAt": "2026-10-22T17:23:34",
+  "Data": {
+    "Action": "Remove",
+    "Product": {
+      "Id": "a19d6d30-7f0c-4ea6-ab05-c4d3fc495cbb",
+      "Name": "Meu Produto Lastlink",
+      "Quantity": 1
+    },
+    "Buyer": {
+      "Id": "f53dcf4f-4677-4523-9b28-ba45f334fcb3",
+      "Email": "test.email@mail.com",
+      "Name": "Moises Pereira",
+      "PhoneNumber": "+5500987645312",
+      "Document": "663.614.400-95",
+      "Address": {
+        "ZipCode": "15056-131",
+        "Street": "Rua Mariana Pereira Butinhon",
+        "StreetNumber": "1",
+        "Complement": "Complemento",
+        "District": "Village Damha Rio Preto III",
+        "City": "São Paulo",
+        "State": "São Paulo"
+      }
+    },
+    "Seller": {
+      "Id": "2e39a390-7ca4-4537-ae49-d3bc54971cdb",
+      "Email": "hidway@outlook.com"
+    },
+    "Subscription": {
+      "Id": "65e0ee43-3a99-457b-a661-4b35973cba15",
+      "ProductId": "a19d6d30-7f0c-4ea6-ab05-c4d3fc495cbb",
+      "ExpiredDate": "2026-10-22T17:23:34.9936069Z"
+    }
+  }
+}
+```
+
+</TabItem>
+
+</Tabs>

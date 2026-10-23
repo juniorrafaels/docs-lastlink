@@ -1,0 +1,28 @@
+---
+sidebar_position: 1
+title: OpenAPI
+---
+
+import CodeBlock from '@theme/CodeBlock';
+import spec from '@site/static/openapi.json';
+
+# OpenAPI
+
+Especificação OpenAPI 3.0.3 da **Lastlink Public Payments API** (versão `1.1.0`). Você pode importá-la em ferramentas como Postman, Insomnia ou Swagger, ou usá-la para gerar clientes (SDKs).
+
+[Baixar openapi.json](/openapi.json)
+
+```text
+Servidor:  https://api.lastlink.com  (Produção)
+Segurança: OAuth2 client-credentials, token em https://api.lastlink.com/oauth/token
+Escopos:   charges:write, webhooks:write, clients:admin
+```
+
+## Especificação
+
+<details>
+<summary>Ver o JSON completo</summary>
+
+<CodeBlock language="json" title="openapi.json">{JSON.stringify(spec, null, 2)}</CodeBlock>
+
+</details>

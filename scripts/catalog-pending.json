@@ -1,0 +1,221 @@
+[
+  {
+    "code": "Purchase_Request_Confirmed",
+    "title": "Fatura Criada",
+    "fields": [
+      {
+        "field": "Data.Products[].Price",
+        "observedType": "number",
+        "examples": [
+          100
+        ],
+        "reason": "a confirmar — campo observado em produção e ausente nos exemplos de teste deste evento; confirmar significado, valores e condições. Ver DT-003 em docs/debitos-tecnicos.md."
+      },
+      {
+        "field": "Data.Purchase.IsRenewal",
+        "observedType": "boolean",
+        "examples": [
+          false
+        ],
+        "reason": "a confirmar — campo observado em produção e ausente nos exemplos de teste deste evento; confirmar significado, valores e condições. Ver DT-003 em docs/debitos-tecnicos.md."
+      },
+      {
+        "field": "Data.Purchase.RecurrenceNumber",
+        "observedType": "number",
+        "examples": [
+          1
+        ],
+        "reason": "a confirmar — campo observado em produção e ausente nos exemplos de teste deste evento; confirmar significado, valores e condições. Ver DT-003 em docs/debitos-tecnicos.md."
+      },
+      {
+        "field": "Data.Purchase.Payment.InterestRateAmount",
+        "observedType": "number",
+        "examples": [
+          0
+        ],
+        "reason": "a confirmar — campo observado em produção e ausente nos exemplos de teste deste evento; confirmar significado, valores e condições. Ver DT-003 em docs/debitos-tecnicos.md."
+      },
+      {
+        "field": "Data.Purchase.PaymentId",
+        "observedType": "string",
+        "examples": [
+          "670765f5-5d5b-4bd3-96ed-f196a39a9811",
+          "e5c1956a-86fe-46f7-b6e0-6eb7d59fdab3",
+          "5cb385ad-59ba-464d-bab6-ce4d96217878"
+        ],
+        "reason": "a confirmar — identificador do pagamento observado em produção neste evento, mas ausente nos testes catalogados; confirmar contrato e condição de envio. Ver DT-003 em docs/debitos-tecnicos.md."
+      }
+    ]
+  },
+  {
+    "code": "Purchase_Order_Confirmed",
+    "title": "Compra Completa",
+    "fields": [
+      {
+        "field": "Data.Products[].Price",
+        "observedType": "number",
+        "examples": [
+          100
+        ],
+        "reason": "a confirmar — campo observado em produção e ausente nos exemplos de teste deste evento; confirmar significado, valores e condições. Ver DT-003 em docs/debitos-tecnicos.md."
+      },
+      {
+        "field": "Data.Purchase.IsRenewal",
+        "observedType": "boolean",
+        "examples": [
+          false
+        ],
+        "reason": "a confirmar — campo observado em produção e ausente nos exemplos de teste deste evento; confirmar significado, valores e condições. Ver DT-003 em docs/debitos-tecnicos.md."
+      },
+      {
+        "field": "Data.Purchase.RecurrenceNumber",
+        "observedType": "number",
+        "examples": [
+          1
+        ],
+        "reason": "a confirmar — campo observado em produção e ausente nos exemplos de teste deste evento; confirmar significado, valores e condições. Ver DT-003 em docs/debitos-tecnicos.md."
+      },
+      {
+        "field": "Data.Purchase.Payment.InterestRateAmount",
+        "observedType": "number",
+        "examples": [
+          0,
+          26.4
+        ],
+        "reason": "a confirmar — campo observado em produção e ausente nos exemplos de teste deste evento; confirmar significado, valores e condições. Ver DT-003 em docs/debitos-tecnicos.md."
+      }
+    ]
+  },
+  {
+    "code": "Payment_Refund",
+    "title": "Pagamento Reembolsado",
+    "fields": [
+      {
+        "field": "Data.Products[].Price",
+        "observedType": "number",
+        "examples": [
+          100
+        ],
+        "reason": "a confirmar — campo observado em produção e ausente nos exemplos de teste deste evento; confirmar significado, valores e condições. Ver DT-003 em docs/debitos-tecnicos.md."
+      },
+      {
+        "field": "Data.Purchase.IsRenewal",
+        "observedType": "boolean",
+        "examples": [
+          false
+        ],
+        "reason": "a confirmar — campo observado em produção e ausente nos exemplos de teste deste evento; confirmar significado, valores e condições. Ver DT-003 em docs/debitos-tecnicos.md."
+      },
+      {
+        "field": "Data.Purchase.RecurrenceNumber",
+        "observedType": "number",
+        "examples": [
+          1
+        ],
+        "reason": "a confirmar — campo observado em produção e ausente nos exemplos de teste deste evento; confirmar significado, valores e condições. Ver DT-003 em docs/debitos-tecnicos.md."
+      },
+      {
+        "field": "Data.Purchase.Payment.InterestRateAmount",
+        "observedType": "number",
+        "examples": [
+          0,
+          26.4
+        ],
+        "reason": "a confirmar — campo observado em produção e ausente nos exemplos de teste deste evento; confirmar significado, valores e condições. Ver DT-003 em docs/debitos-tecnicos.md."
+      },
+      {
+        "field": "Data.Purchase.RefundDate",
+        "observedType": "string",
+        "examples": [
+          "2026-10-22T15:25:06",
+          "2026-10-22T15:37:57"
+        ],
+        "reason": "a confirmar — significado, fuso e condição de envio de RefundDate, observado em produção e ausente nos testes. Ver DT-003 em docs/debitos-tecnicos.md."
+      }
+    ]
+  },
+  {
+    "code": "Purchase_Request_Expired",
+    "title": "Pedido de Compra Expirada",
+    "fields": [
+      {
+        "field": "Data.Products[].Price",
+        "observedType": "number",
+        "examples": [
+          100
+        ],
+        "reason": "a confirmar — campo observado em produção e ausente nos exemplos de teste deste evento; confirmar significado, valores e condições. Ver DT-003 em docs/debitos-tecnicos.md."
+      },
+      {
+        "field": "Data.Purchase.IsRenewal",
+        "observedType": "boolean",
+        "examples": [
+          false
+        ],
+        "reason": "a confirmar — campo observado em produção e ausente nos exemplos de teste deste evento; confirmar significado, valores e condições. Ver DT-003 em docs/debitos-tecnicos.md."
+      },
+      {
+        "field": "Data.Purchase.RecurrenceNumber",
+        "observedType": "number",
+        "examples": [
+          1
+        ],
+        "reason": "a confirmar — campo observado em produção e ausente nos exemplos de teste deste evento; confirmar significado, valores e condições. Ver DT-003 em docs/debitos-tecnicos.md."
+      },
+      {
+        "field": "Data.Purchase.Payment.InterestRateAmount",
+        "observedType": "number",
+        "examples": [
+          0
+        ],
+        "reason": "a confirmar — campo observado em produção e ausente nos exemplos de teste deste evento; confirmar significado, valores e condições. Ver DT-003 em docs/debitos-tecnicos.md."
+      },
+      {
+        "field": "Data.Purchase.PaymentId",
+        "observedType": "string",
+        "examples": [
+          "5cb385ad-59ba-464d-bab6-ce4d96217878"
+        ],
+        "reason": "a confirmar — identificador do pagamento observado em produção neste evento, mas ausente nos testes catalogados; confirmar contrato e condição de envio. Ver DT-003 em docs/debitos-tecnicos.md."
+      }
+    ]
+  },
+  {
+    "code": "Refund_Requested",
+    "title": "Reembolso solicitado",
+    "fields": [
+      {
+        "field": "Data.Products[].Price",
+        "observedType": "number",
+        "examples": [
+          100
+        ],
+        "reason": "a confirmar — campo observado em produção e ausente nos exemplos de teste deste evento; confirmar significado, valores e condições. Ver DT-003 em docs/debitos-tecnicos.md."
+      },
+      {
+        "field": "Data.Purchase.IsRenewal",
+        "observedType": "boolean",
+        "examples": [
+          false
+        ],
+        "reason": "a confirmar — campo observado em produção e ausente nos exemplos de teste deste evento; confirmar significado, valores e condições. Ver DT-003 em docs/debitos-tecnicos.md."
+      },
+      {
+        "field": "Data.Purchase.RecurrenceNumber",
+        "observedType": "number",
+        "examples": [
+          1
+        ],
+        "reason": "a confirmar — campo observado em produção e ausente nos exemplos de teste deste evento; confirmar significado, valores e condições. Ver DT-003 em docs/debitos-tecnicos.md."
+      },
+      {
+        "field": "Data.Purchase.Payment.InterestRateAmount",
+        "observedType": "number",
+        "examples": [
+          26.4
+        ],
+        "reason": "a confirmar — campo observado em produção e ausente nos exemplos de teste deste evento; confirmar significado, valores e condições. Ver DT-003 em docs/debitos-tecnicos.md."
+      }
+    ]
+  }
+]

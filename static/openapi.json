@@ -1,0 +1,694 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Lastlink Public Payments API",
+    "version": "1.1.0",
+    "description": "API pública server-to-server para criação de cobranças PIX por parceiros/creators. A cobrança nasce sob a wallet do token (S-2); creatorId/walletId nunca vêm do corpo do request. Idempotência forte via header Idempotency-Key. Confirmação assíncrona por webhook de saída assinado (HMAC).",
+    "contact": {"name": "Lastlink", "url": "https://lastlink.com"}
+  },
+  "servers": [{"url": "https://api.lastlink.com", "description": "Produção"}],
+  "security": [{"callerToken": ["charges:write"]}],
+  "tags": [
+    {"name": "Charges", "description": "Criar, consultar, listar e cancelar cobranças. Contrato agnóstico de método (campo 'type'); no momento apenas PIX."},
+    {"name": "Clients (management)", "description": "Credencial de cliente — privilégio do dono da wallet (clients:admin)."},
+    {"name": "Webhooks (management)", "description": "Assinaturas de webhook — self-service (webhooks:write)."},
+    {"name": "Offers", "description": "Catálogo de ofertas do creator: resolve o código da oferta no `planId` que a cobrança exige."}
+  ],
+  "paths": {
+    "/v1/charges": {
+      "post": {
+        "tags": ["Charges"],
+        "summary": "Cria uma cobrança",
+        "description": "Contrato agnóstico de método: o campo 'type' define o meio de pagamento. No momento apenas 'pix' é suportado.",
+        "operationId": "createCharge",
+        "security": [{"callerToken": ["charges:write"]}],
+        "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CreateChargeRequest"}}}
+        },
+        "responses": {
+          "201": {
+            "description": "Cobrança criada (QR síncrono para PIX).",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ChargeResponse"}}}
+          },
+          "400": {"$ref": "#/components/responses/BadRequest"},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "403": {
+            "description": "Sem permissao: escopo insuficiente, ou a oferta pertence a outro creator (code offer_not_owned). Os dois casos respondem 403 de proposito - nao dizemos a qual creator a oferta pertence.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Problem"}}}
+          },
+          "404": {"$ref": "#/components/responses/NotFound"},
+          "409": {"$ref": "#/components/responses/Conflict"},
+          "422": {"$ref": "#/components/responses/UnprocessableEntity"},
+          "503": {"$ref": "#/components/responses/ServiceUnavailable"}
+        }
+      },
+      "get": {
+        "tags": ["Charges"],
+        "summary": "Lista cobranças (paginado, filtros)",
+        "operationId": "listCharges",
+        "security": [{"callerToken": ["charges:write"]}],
+        "parameters": [
+          {"name": "status", "in": "query", "schema": {"$ref": "#/components/schemas/ChargeStatus"}},
+          {"name": "createdFrom", "in": "query", "schema": {"type": "string", "format": "date-time"}},
+          {"name": "createdTo", "in": "query", "schema": {"type": "string", "format": "date-time"}},
+          {"name": "externalReference", "in": "query", "schema": {"type": "string"}},
+          {"name": "limit", "in": "query", "schema": {"type": "integer", "default": 20, "maximum": 100}},
+          {"name": "cursor", "in": "query", "schema": {"type": "string"}, "description": "Cursor opaco da página anterior."}
+        ],
+        "responses": {
+          "200": {
+            "description": "Página de cobranças.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ChargeListResponse"}}}
+          },
+          "400": {"$ref": "#/components/responses/BadRequest"},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "503": {"$ref": "#/components/responses/ServiceUnavailable"}
+        }
+      }
+    },
+    "/v1/charges/{id}": {
+      "get": {
+        "tags": ["Charges"],
+        "summary": "Consulta uma cobrança",
+        "operationId": "getCharge",
+        "security": [{"callerToken": ["charges:write"]}],
+        "parameters": [{"$ref": "#/components/parameters/ChargeId"}],
+        "responses": {
+          "200": {
+            "description": "Cobrança.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ChargeStatusResponse"}}}
+          },
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "404": {"$ref": "#/components/responses/NotFound"},
+          "503": {"$ref": "#/components/responses/ServiceUnavailable"}
+        }
+      }
+    },
+    "/v1/charges/{id}/cancel": {
+      "post": {
+        "tags": ["Charges"],
+        "summary": "Cancela uma cobrança pendente",
+        "operationId": "cancelCharge",
+        "security": [{"callerToken": ["charges:write"]}],
+        "parameters": [{"$ref": "#/components/parameters/ChargeId"}],
+        "responses": {
+          "200": {
+            "description": "Cobrança cancelada (idempotente).",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ChargeStatusResponse"}}}
+          },
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "404": {"$ref": "#/components/responses/NotFound"},
+          "409": {
+            "description": "Cobrança já paga/expirada — não pode ser cancelada.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Problem"}}}
+          },
+          "503": {"$ref": "#/components/responses/ServiceUnavailable"}
+        }
+      }
+    },
+    "/v1/charges/{id}/refund": {
+      "post": {
+        "tags": ["Charges"],
+        "summary": "Devolve uma cobrança paga",
+        "description": "Reusa o fluxo de devolução do motor. A devolução é sempre TOTAL — não existe devolução parcial. O campo amount é opcional e só é aceito quando igual ao total da cobrança: zero ou negativo retorna 400 invalid_amount, e um valor positivo diferente do total retorna 400 partial_refund_not_supported. Repetir o request devolve a mesma devolução com 200, sem criar outra.",
+        "operationId": "refundCharge",
+        "security": [{"callerToken": ["charges:write"]}],
+        "parameters": [{"$ref": "#/components/parameters/ChargeId"}],
+        "requestBody": {
+          "required": false,
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/RefundRequest"}}}
+        },
+        "responses": {
+          "200": {
+            "description": "Devolução já existente — o retry não criou nada. Mesmo corpo do 201.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/RefundResponse"}}}
+          },
+          "201": {
+            "description": "Devolução criada.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/RefundResponse"}}}
+          },
+          "400": {"$ref": "#/components/responses/BadRequest"},
+          "404": {"$ref": "#/components/responses/NotFound"},
+          "409": {"$ref": "#/components/responses/Conflict"},
+          "503": {"$ref": "#/components/responses/ServiceUnavailable"}
+        }
+      }
+    },
+    "/v1/charges/{id}/refunds": {
+      "get": {
+        "tags": ["Charges"],
+        "summary": "Lista devoluções de uma cobrança",
+        "operationId": "listRefunds",
+        "security": [{"callerToken": ["charges:write"]}],
+        "parameters": [{"$ref": "#/components/parameters/ChargeId"}],
+        "responses": {
+          "200": {
+            "description": "Devoluções.",
+            "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/RefundResponse"}}}}
+          },
+          "404": {"$ref": "#/components/responses/NotFound"}
+        }
+      }
+    },
+    "/v1/offers": {
+      "get": {
+        "tags": ["Offers"],
+        "operationId": "listOffers",
+        "summary": "Lista as ofertas do creator",
+        "description": "Catálogo do que você pode cobrar. Cada oferta vem com os seus **planos ativos** — o `planId` é o que `POST /v1/charges` consome.\n\nO escopo é o creator do seu token: não há parâmetro de creator.\n\n**`planId` não é estável:** editar o preço de uma oferta cria um plano novo e desativa o anterior. Resolva o plano ativo antes de cobrar, em vez de fixar o id na integração.",
+        "security": [{"callerToken": ["charges:write"]}],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "description": "Filtra pelo código da oferta — o mesmo que aparece na URL de checkout (`lastlink.com/p/{code}`).",
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ofertas do creator.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/OfferListResponse"}}}
+          },
+          "401": {"description": "Token ausente, inválido ou expirado."},
+          "403": {"description": "Token sem o escopo `charges:write`."},
+          "503": {"description": "Catálogo indisponível: integração não configurada neste ambiente."}
+        }
+      }
+    },
+    "/v1/clients": {
+      "post": {
+        "tags": ["Clients (management)"],
+        "summary": "Cria uma credencial de cliente",
+        "description": "Provisiona uma credencial de cliente escopada à wallet. Retorna client_id/client_secret UMA ÚNICA VEZ. Requer o escopo clients:admin (dono da wallet).",
+        "operationId": "createClient",
+        "security": [{"callerToken": ["clients:admin"]}],
+        "requestBody": {
+          "required": false,
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CreateClientRequest"}}}
+        },
+        "responses": {
+          "201": {
+            "description": "Credencial criada (secret uma única vez).",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ClientCredentialResponse"}}}
+          },
+          "400": {"$ref": "#/components/responses/BadRequest"},
+          "403": {"$ref": "#/components/responses/Forbidden"}
+        }
+      },
+      "get": {
+        "tags": ["Clients (management)"],
+        "summary": "Lista credenciais da wallet",
+        "operationId": "listClients",
+        "security": [{"callerToken": ["clients:admin"]}],
+        "responses": {
+          "200": {
+            "description": "Clients.",
+            "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/ClientSummary"}}}}
+          }
+        }
+      }
+    },
+    "/v1/clients/{id}": {
+      "delete": {
+        "tags": ["Clients (management)"],
+        "summary": "Revoga uma credencial",
+        "operationId": "revokeClient",
+        "security": [{"callerToken": ["clients:admin"]}],
+        "parameters": [{"$ref": "#/components/parameters/ResourceId"}],
+        "responses": {
+          "204": {"description": "Revogada."},
+          "404": {"$ref": "#/components/responses/NotFound"}
+        }
+      }
+    },
+    "/v1/webhooks": {
+      "post": {
+        "tags": ["Webhooks (management)"],
+        "summary": "Registra uma assinatura de webhook",
+        "operationId": "createWebhook",
+        "security": [{"callerToken": ["webhooks:write"]}],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CreateWebhookRequest"}}}
+        },
+        "responses": {
+          "201": {
+            "description": "Assinatura criada (secret uma única vez).",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/WebhookCreatedResponse"}}}
+          },
+          "400": {"$ref": "#/components/responses/BadRequest"},
+          "403": {"$ref": "#/components/responses/Forbidden"}
+        }
+      },
+      "get": {
+        "tags": ["Webhooks (management)"],
+        "summary": "Lista assinaturas",
+        "operationId": "listWebhooks",
+        "security": [{"callerToken": ["webhooks:write"]}],
+        "responses": {
+          "200": {
+            "description": "Assinaturas.",
+            "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/WebhookResponse"}}}}
+          }
+        }
+      }
+    },
+    "/v1/webhooks/{id}": {
+      "get": {
+        "tags": ["Webhooks (management)"],
+        "summary": "Detalha uma assinatura",
+        "operationId": "getWebhook",
+        "security": [{"callerToken": ["webhooks:write"]}],
+        "parameters": [{"$ref": "#/components/parameters/ResourceId"}],
+        "responses": {
+          "200": {
+            "description": "Assinatura.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/WebhookResponse"}}}
+          },
+          "404": {"$ref": "#/components/responses/NotFound"}
+        }
+      },
+      "put": {
+        "tags": ["Webhooks (management)"],
+        "summary": "Atualiza uma assinatura",
+        "operationId": "updateWebhook",
+        "security": [{"callerToken": ["webhooks:write"]}],
+        "parameters": [{"$ref": "#/components/parameters/ResourceId"}],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/UpdateWebhookRequest"}}}
+        },
+        "responses": {
+          "200": {
+            "description": "Atualizada.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/WebhookResponse"}}}
+          },
+          "400": {"$ref": "#/components/responses/BadRequest"},
+          "404": {"$ref": "#/components/responses/NotFound"}
+        }
+      },
+      "delete": {
+        "tags": ["Webhooks (management)"],
+        "summary": "Remove uma assinatura",
+        "operationId": "deleteWebhook",
+        "security": [{"callerToken": ["webhooks:write"]}],
+        "parameters": [{"$ref": "#/components/parameters/ResourceId"}],
+        "responses": {
+          "204": {"description": "Removida."},
+          "404": {"$ref": "#/components/responses/NotFound"}
+        }
+      }
+    },
+    "/v1/pix/{token}.png": {
+      "get": {
+        "summary": "Imagem do QR code PIX",
+        "description": "PNG do QR da cobranca, servido pela Lastlink. E o valor que vem em `pix.qrCode` na criacao da cobranca — normalmente voce nao monta esta URL, apenas a usa.\n\n**Nao exige autenticacao**: quem abre e o COMPRADOR, numa tela de pagamento ou e-mail, onde nao existe credencial. A protecao e o token assinado no caminho — sem a chave nao se forja um, entao nao ha URL enumeravel.\n\nA imagem e desenhada a partir do `emv` da cobranca, que continua sendo a fonte de verdade do pagamento. Depois que a cobranca expira, responde 404.",
+        "operationId": "getPixQrCodeImage",
+        "tags": ["Charges"],
+        "security": [],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Token opaco emitido junto com a cobranca. Carrega a validade."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Imagem PNG do QR",
+            "content": {"image/png": {"schema": {"type": "string", "format": "binary"}}}
+          },
+          "404": {"description": "Token invalido, expirado ou cobranca sem QR"}
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "callerToken": {
+        "type": "oauth2",
+        "description": "OAuth2 client-credentials. O token RS256 carrega o claim de wallet/creator.",
+        "flows": {
+          "clientCredentials": {
+            "tokenUrl": "https://api.lastlink.com/oauth/token",
+            "scopes": {
+              "charges:write": "Criar/consultar/cancelar cobranças",
+              "webhooks:write": "Gerir assinaturas de webhook",
+              "clients:admin": "Administrar credenciais de cliente (dono da wallet)"
+            }
+          }
+        }
+      }
+    },
+    "parameters": {
+      "IdempotencyKey": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": true,
+        "schema": {"type": "string"},
+        "description": "Chave de idempotência do parceiro, escopada à wallet. Repetir a chave com o MESMO corpo devolve a cobranca ja criada, nunca uma segunda. Repetir a chave com corpo DIFERENTE nao devolve a cobranca anterior: responde 409 idempotency_key_reuse ou cria uma cobranca nova. Uma chave e uma intencao de cobranca - para cobrar outra coisa, gere uma chave nova."
+      },
+      "ChargeId": {"name": "id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}},
+      "ResourceId": {"name": "id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}}
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Requisição inválida.",
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Problem"}}}
+      },
+      "Unauthorized": {"description": "Token ausente/inválido."},
+      "Forbidden": {
+        "description": "Escopo insuficiente.",
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Problem"}}}
+      },
+      "NotFound": {
+        "description": "Recurso não encontrado (ou fora do seu tenant).",
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Problem"}}}
+      },
+      "Conflict": {
+        "description": "Conflito de estado.",
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Problem"}}}
+      },
+      "UnprocessableEntity": {
+        "description": "Entidade não processável — type ausente (code=type_required) ou método não suportado (code=unsupported_payment_type).",
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Problem"}}}
+      },
+      "ServiceUnavailable": {
+        "description": "Servico indisponivel (code engine_unavailable ou engine_unreachable): a integracao necessaria para a operacao nao esta disponivel neste ambiente - o motor de cobranca nao esta configurado ou nao pode ser alcancado, ou, no caso de devolucao, a integracao de refund ainda nao existe. Nao e erro da requisicao - repita depois.",
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Problem"}}}
+      }
+    },
+    "schemas": {
+      "ChargeStatus": {"type": "string", "enum": ["PENDING", "PAID", "EXPIRED", "CANCELLED"]},
+      "PaymentType": {
+        "type": "string",
+        "enum": ["pix", "card", "boleto"],
+        "description": "Método de pagamento (discriminador). Apenas 'pix' é suportado no momento; qualquer outro valor resulta em 422."
+      },
+      "PixChargeOptions": {
+        "type": "object",
+        "description": "Opções específicas de PIX (usadas apenas quando type = pix).",
+        "properties": {
+          "pixMode": {"type": "string", "nullable": true, "enum": ["manual", "automatic", null]}
+        }
+      },
+      "PixResponseData": {
+        "type": "object",
+        "description": "Dados síncronos do método PIX (QR/EMV/expiração).",
+        "properties": {
+          "qrCode": {
+            "type": "string",
+            "nullable": true,
+            "description": "URL da IMAGEM do QR, servida pela Lastlink. Conveniencia para exibir ao comprador; expira junto com a cobranca."
+          },
+          "emv": {
+            "type": "string",
+            "nullable": true,
+            "description": "Payload BR Code (copia-e-cola), padrao do Banco Central. E a FONTE DE VERDADE do pagamento: com ele qualquer app de banco paga, e a imagem pode ser desenhada a partir dele."
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Quando a cobranca (e o QR) deixam de valer. E o prazo que a Lastlink persiste para a cobranca — o mesmo valor na criacao e na consulta. Ausente quando nao ha prazo conhecido; nesse caso a imagem do QR nao e emitida."
+          }
+        }
+      },
+      "Buyer": {
+        "type": "object",
+        "required": ["email", "document"],
+        "properties": {
+          "email": {"type": "string", "format": "email"},
+          "name": {"type": "string", "nullable": true},
+          "document": {"type": "string", "description": "CPF real do pagador (obrigatório)."},
+          "phone": {"type": "string", "nullable": true}
+        }
+      },
+      "CreateChargeRequest": {
+        "type": "object",
+        "required": ["type", "planId", "offerId", "buyer"],
+        "properties": {
+          "type": {"$ref": "#/components/schemas/PaymentType"},
+          "planId": {"type": "string", "format": "uuid"},
+          "offerId": {"type": "string", "format": "uuid"},
+          "buyer": {"$ref": "#/components/schemas/Buyer"},
+          "couponId": {"type": "string", "format": "uuid", "nullable": true},
+          "affiliateId": {"type": "string", "format": "uuid", "nullable": true},
+          "orderBumpIds": {"type": "array", "items": {"type": "string", "format": "uuid"}, "nullable": true},
+          "pix": {"allOf": [{"$ref": "#/components/schemas/PixChargeOptions"}], "nullable": true},
+          "externalReference": {"type": "string", "nullable": true},
+          "metadata": {"type": "object", "additionalProperties": {"type": "string"}, "nullable": true}
+        }
+      },
+      "ChargeResponse": {
+        "type": "object",
+        "properties": {
+          "chargeId": {"type": "string", "format": "uuid"},
+          "status": {"$ref": "#/components/schemas/ChargeStatus"},
+          "type": {"$ref": "#/components/schemas/PaymentType"},
+          "pix": {"allOf": [{"$ref": "#/components/schemas/PixResponseData"}], "nullable": true},
+          "externalReference": {"type": "string", "nullable": true}
+        }
+      },
+      "ChargeStatusResponse": {
+        "type": "object",
+        "properties": {
+          "chargeId": {"type": "string", "format": "uuid"},
+          "status": {"$ref": "#/components/schemas/ChargeStatus"},
+          "type": {"$ref": "#/components/schemas/PaymentType"},
+          "paidAt": {"type": "string", "format": "date-time", "nullable": true},
+          "externalReference": {"type": "string", "nullable": true},
+          "metadata": {"type": "object", "additionalProperties": {"type": "string"}, "nullable": true},
+          "pix": {
+            "$ref": "#/components/schemas/PixResponseData",
+            "description": "Artefatos do PIX da cobranca. `qrCode` vem nulo quando a cobranca ja expirou — um link que nasce morto e pior que campo nulo."
+          }
+        }
+      },
+      "ChargeListItem": {
+        "type": "object",
+        "properties": {
+          "chargeId": {"type": "string", "format": "uuid"},
+          "status": {"$ref": "#/components/schemas/ChargeStatus"},
+          "type": {"$ref": "#/components/schemas/PaymentType"},
+          "createdAt": {"type": "string", "format": "date-time"},
+          "paidAt": {"type": "string", "format": "date-time", "nullable": true},
+          "externalReference": {"type": "string", "nullable": true},
+          "metadata": {"type": "object", "additionalProperties": {"type": "string"}, "nullable": true}
+        }
+      },
+      "ChargeListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {"type": "array", "items": {"$ref": "#/components/schemas/ChargeListItem"}},
+          "nextCursor": {"type": "string", "nullable": true}
+        }
+      },
+      "RefundRequest": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true,
+            "description": "Valor em centavos. Só é aceito quando IGUAL ao total da cobrança — a devolução é sempre total. Omitido (recomendado) = devolução total."
+          },
+          "autoApprove": {
+            "type": "boolean",
+            "nullable": true,
+            "default": false,
+            "description": "true = você aprova a devolução no ato e ela segue direto para execução. false ou omitido = abre uma solicitação, que passa pela avaliação padrão da Lastlink (o mesmo fluxo de um pedido feito pelo comprador)."
+          }
+        }
+      },
+      "RefundResponse": {
+        "type": "object",
+        "properties": {
+          "refundId": {"type": "string", "format": "uuid"},
+          "chargeId": {"type": "string", "format": "uuid"},
+          "status": {
+            "type": "string",
+            "enum": ["UNDER_REVIEW", "PROCESSING", "COMPLETED", "REJECTED", "FAILED", "CANCELLED"],
+            "description": "Situação da devolução. Nunca nasce COMPLETED: mesmo aprovada, ela depende de saldo na carteira e da resposta do provedor — acompanhe por GET /v1/charges/{id}/refunds."
+          },
+          "amount": {"type": "integer", "format": "int64"},
+          "createdAt": {"type": "string", "format": "date-time"},
+          "refundedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Momento em que o dinheiro voltou ao pagador. Nulo enquanto a devolução não concluiu."
+          }
+        }
+      },
+      "CreateClientRequest": {
+        "type": "object",
+        "properties": {"name": {"type": "string", "nullable": true}}
+      },
+      "ClientCredentialResponse": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string", "format": "uuid"},
+          "clientId": {"type": "string"},
+          "clientSecret": {"type": "string", "description": "Mostrado uma única vez."},
+          "createdAt": {"type": "string", "format": "date-time"},
+          "message": {"type": "string"}
+        }
+      },
+      "ClientSummary": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string", "format": "uuid"},
+          "clientId": {"type": "string"},
+          "name": {"type": "string", "nullable": true},
+          "revoked": {"type": "boolean"},
+          "createdAt": {"type": "string", "format": "date-time"},
+          "lastRotatedAt": {"type": "string", "format": "date-time", "nullable": true}
+        }
+      },
+      "CreateWebhookRequest": {
+        "type": "object",
+        "required": ["url", "events"],
+        "properties": {
+          "url": {"type": "string", "format": "uri", "description": "HTTPS público (validado anti-SSRF)."},
+          "events": {"type": "array", "items": {"type": "string", "enum": ["pix.paid", "pix.refunded"]}}
+        }
+      },
+      "UpdateWebhookRequest": {
+        "type": "object",
+        "properties": {
+          "url": {"type": "string", "format": "uri", "nullable": true},
+          "events": {"type": "array", "items": {"type": "string"}, "nullable": true},
+          "active": {"type": "boolean", "nullable": true}
+        }
+      },
+      "WebhookResponse": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string", "format": "uuid"},
+          "url": {"type": "string"},
+          "events": {"type": "array", "items": {"type": "string"}},
+          "active": {"type": "boolean"},
+          "createdAt": {"type": "string", "format": "date-time"}
+        }
+      },
+      "WebhookCreatedResponse": {
+        "allOf": [
+          {"$ref": "#/components/schemas/WebhookResponse"},
+          {
+            "type": "object",
+            "properties": {"secret": {"type": "string"}, "message": {"type": "string"}}
+          }
+        ]
+      },
+      "PixPaidWebhookEvent": {
+        "type": "object",
+        "description": "Payload do webhook de SAÍDA pix.paid. Assinado com HMAC-SHA256 no header X-Lastlink-Signature (t=<ts>,v1=<hex> sobre '{timestamp}.{body}'). O id é determinístico por (cobrança, evento) — use-o para deduplicar.",
+        "properties": {
+          "id": {"type": "string"},
+          "type": {"type": "string", "enum": ["pix.paid"]},
+          "createdAt": {"type": "string", "format": "date-time"},
+          "data": {
+            "type": "object",
+            "properties": {
+              "chargeId": {"type": "string", "format": "uuid"},
+              "status": {"$ref": "#/components/schemas/ChargeStatus"},
+              "paidAt": {"type": "string", "format": "date-time", "nullable": true},
+              "gatewayTransactionId": {"type": "string", "nullable": true, "description": "Identificador da transação no provedor."},
+              "externalReference": {"type": "string", "nullable": true}
+            }
+          }
+        }
+      },
+      "Problem": {
+        "type": "object",
+        "description": "RFC 7807 Problem Details.",
+        "properties": {
+          "type": {"type": "string"},
+          "title": {"type": "string"},
+          "status": {"type": "integer"},
+          "detail": {"type": "string"},
+          "code": {"type": "string"},
+          "errors": {"type": "object", "additionalProperties": {"type": "array", "items": {"type": "string"}}}
+        }
+      },
+      "OfferListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {"type": "array", "items": {"$ref": "#/components/schemas/OfferSummary"}, "description": "Ofertas da página."},
+          "nextCursor": {"type": "string", "nullable": true, "description": "Cursor opaco da próxima página; hoje sempre `null`."}
+        }
+      },
+      "OfferSummary": {
+        "type": "object",
+        "properties": {
+          "offerId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Identificador da oferta. É OBRIGATÓRIO em `POST /v1/charges`, junto com o `planId` — a criação valida os dois e usa a oferta na verificação de posse. Também é a referência para log e suporte."
+          },
+          "code": {"type": "string", "description": "Código da oferta — o mesmo da URL de checkout."},
+          "title": {"type": "string", "nullable": true, "description": "Título exibido ao comprador."},
+          "checkoutUrl": {"type": "string", "description": "URL do checkout hospedado da Lastlink."},
+          "billingType": {"$ref": "#/components/schemas/OfferBillingType"},
+          "sellable": {"type": "boolean", "description": "Cobrável agora: aceita novas vendas, dentro da vigência e com ao menos um plano ativo."},
+          "validFrom": {"type": "string", "format": "date-time", "nullable": true},
+          "validUntil": {"type": "string", "format": "date-time", "nullable": true},
+          "activePlanCount": {
+            "type": "integer",
+            "description": "Quantos planos ativos a oferta tem. Se for maior que 1, escolher o plano é decisão sua — não assuma `plans[0]`."
+          },
+          "plans": {"type": "array", "items": {"$ref": "#/components/schemas/OfferPlan"}, "description": "Somente os planos ATIVOS, ordenados por valor."},
+          "updatedAt": {"type": "string", "format": "date-time"}
+        }
+      },
+      "OfferPlan": {
+        "type": "object",
+        "properties": {
+          "planId": {"type": "string", "format": "uuid", "description": "NÃO é estável: editar o preço cria um plano novo e desativa o anterior."},
+          "amount": {"type": "integer", "format": "int64", "description": "Valor em CENTAVOS."},
+          "membershipFee": {"type": "integer", "format": "int64", "description": "Taxa de adesão, em centavos."},
+          "billingType": {"$ref": "#/components/schemas/OfferBillingType"},
+          "recurrenceMonths": {"type": "integer", "nullable": true, "description": "Periodicidade em MESES (1, 3, 6, 12). `null` em cobrança única."}
+        }
+      },
+      "OfferBillingType": {
+        "type": "string",
+        "enum": ["ONE_TIME", "SUBSCRIPTION"],
+        "nullable": true,
+        "description": "Cobrança única ou recorrente."
+      },
+      "PixRefundedWebhookEvent": {
+        "type": "object",
+        "description": "Payload do webhook de SAÍDA pix.refunded: a devolução foi CONCLUÍDA (o dinheiro voltou ao pagador). Mesmo envelope e mesma assinatura do pix.paid. Não repete o status da cobrança — o contrato tem quatro estados e nenhum é 'devolvido'.",
+        "properties": {
+          "id": {"type": "string"},
+          "type": {"type": "string", "enum": ["pix.refunded"]},
+          "createdAt": {"type": "string", "format": "date-time"},
+          "data": {
+            "type": "object",
+            "properties": {
+              "chargeId": {"type": "string", "format": "uuid"},
+              "refundId": {
+                "type": "string",
+                "format": "uuid",
+                "nullable": true,
+                "description": "Mesmo identificador devolvido pelo POST /v1/charges/{id}/refund. Nulo quando a devolução foi executada fora do fluxo de solicitação."
+              },
+              "refundedAt": {"type": "string", "format": "date-time", "nullable": true, "description": "Quando o dinheiro voltou ao pagador."},
+              "amountCents": {"type": "integer", "format": "int64", "nullable": true, "description": "Valor devolvido, em centavos."},
+              "gatewayTransactionId": {"type": "string", "nullable": true, "description": "Identificador da transação no provedor."},
+              "externalReference": {"type": "string", "nullable": true, "description": "A referência que você enviou na criação da cobrança."}
+            }
+          }
+        }
+      }
+    }
+  }
+}
