@@ -158,7 +158,7 @@ Consulte [Assinatura Pendente de Renovação](./eventos/assinatura-pendente-de-r
 
 No boleto, o pedido do membro sempre segue para avaliação manual. Em cartão e Pix, isso ocorre quando o produto não tem reembolso automático ou o pedido ultrapassa o prazo configurado para esse fluxo. Esse prazo pode ser de **7, 15 ou 30 dias**, conforme o produto.
 
-`Payment_Refund` depende da **confirmação do gateway**. Marcar um reembolso como realizado fora da plataforma não gera esse evento.
+`Payment_Refund` depende da **confirmação da Lastlink**. Marcar um reembolso como realizado fora da plataforma não gera esse evento.
 
 ## Período de garantia
 

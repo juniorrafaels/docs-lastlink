@@ -10,13 +10,13 @@ O evento `Payment_Chargeback` informa um **estorno confirmado**, conforme os flu
 
 ## Quando é disparado
 
-O evento contempla **contestação de cartão ou protesto na Iugu**, e **disputa de Pix pelo MED perdida na Yuno**.
+O evento contempla **contestação de cartão**, **protesto** e **disputa de Pix (MED) perdida**.
 
 `Data.Purchase.ChargebackDate` informa a data e a hora do estorno confirmado. O payload se refere aos dados do pagamento original.
 
 ### Meios de pagamento e condições
 
-O envio depende do gateway e do fluxo. Na Yuno, somente a disputa de **Pix** perdida gera este evento; contestação de cartão na Yuno não o gera.
+O envio depende do meio de pagamento e do fluxo da compra. Em **Pix**, somente a disputa perdida gera este evento. Em cartão, nem toda contestação gera o evento: o envio depende do fluxo da compra.
 
 Consulte também o [resumo dos gatilhos](../gatilhos-dos-eventos.md#pagamento-estornado) e as [regras de distribuição e entrega](../regras.md#distribuição-dos-eventos).
 

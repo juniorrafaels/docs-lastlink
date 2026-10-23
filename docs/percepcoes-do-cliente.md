@@ -28,7 +28,7 @@ Em 22/10/2026, o usuário forneceu os gatilhos e as restrições por meio de pag
 
 Essa confirmação substitui as pendências anteriores desta página sobre seleção por webhook ativo, evento e produto; timeout de 10 segundos; sequência de retentativas até a retenção configurada; gatilhos de cancelamento e expiração; solicitação de reembolso somente em avaliação manual; e correspondência dos eventos de acesso pago. O identificador de Notificar Membro Ativo foi definido como `Notify_Active_Member`, sem disparador de produção. Não foi fornecido um payload desse identificador.
 
-Os relatos sobre notificação antecipada da garantia e cancelamento sem evento no reembolso Yuno foram centralizados em [Débitos técnicos](./debitos-tecnicos.md). A possibilidade de duplicidade entre os dois disparadores de carrinho é uma hipótese por código, sem medição em produção. Os registros históricos abaixo devem ser lidos considerando essas definições posteriores.
+Os relatos sobre notificação antecipada da garantia e cancelamento sem evento em determinados reembolsos foram centralizados em [Débitos técnicos](./debitos-tecnicos.md). A possibilidade de duplicidade entre os dois disparadores de carrinho é uma hipótese por código, sem medição em produção. Os registros históricos abaixo devem ser lidos considerando essas definições posteriores.
 
 ## Contribuições prioritárias para a documentação pública
 
@@ -517,7 +517,7 @@ O levantamento informa duas formas de conferência, percentis e janelas de corre
 
 ### Prazos medidos não são prazos contratuais
 
-O relatório propõe um padrão de remoção por inadimplência no quinto dia após o vencimento e de `Subscription_Expired` no décimo nono dia, com intervalo de aproximadamente duas semanas entre os dois eventos. Isso é útil para investigar a separação entre fim do acesso e expiração formal da assinatura, mas não define a carência de todos os produtos, gateways ou meios de pagamento.
+O relatório propõe um padrão de remoção por inadimplência no quinto dia após o vencimento e de `Subscription_Expired` no décimo nono dia, com intervalo de aproximadamente duas semanas entre os dois eventos. Isso é útil para investigar a separação entre fim do acesso e expiração formal da assinatura, mas não define a carência de todos os produtos ou meios de pagamento.
 
 As regras confirmadas descrevem carência configurada por meio de pagamento, além de fluxos próprios para pagamento único e Parcelamento Inteligente. Antes de incorporar os números observados, é necessário identificar qual configuração gerou cada grupo e qual marco inicia a contagem: vencimento da assinatura, parcela ou término efetivo do acesso.
 
@@ -559,7 +559,7 @@ Uma referência pública deve separar momento do fato, criação do webhook e re
 | Cada compra tem um produto e uma assinatura | É uma característica da amostra. As estruturas continuam sendo listas; order bump e bundle fazem parte dos fluxos confirmados. |
 | Parcelamento Inteligente só existe no cartão porque não apareceu em Pix | Ausência no recorte não define exclusividade por método. Não restringir o contrato com esse argumento. |
 | `direct` não apareceu, apenas `recovery` ou valor vazio | `direct` continua confirmado. Distinguir chave ausente, `null` e texto vazio antes de definir a condição de `Type`. |
-| Todo reembolso vem com cancelamento e remoção no mesmo segundo | O próprio relatório apresenta casos sem esses pares. O levantamento de gatilhos também descreve diferenças por gateway; a amostra não identifica a causa de cada ausência. |
+| Todo reembolso vem com cancelamento e remoção no mesmo segundo | O próprio relatório apresenta casos sem esses pares. O levantamento de gatilhos também descreve diferenças por meio de pagamento e fluxo; a amostra não identifica a causa de cada ausência. |
 | Toda assinatura cancelada deixa de gerar outros eventos | Não observar uma transição no período não prova uma proibição universal, especialmente diante de reativação, pagamento atrasado e diferenças de configuração. |
 | Ausência de `Refund_Requested` significa opção desligada | O gatilho depende de solicitação do membro encaminhada à avaliação manual; ausência na base não informa a configuração do painel. |
 | Ausência de início de acesso `Guest` significa que o evento não existe | O cenário de convidado está confirmado; a amostra tem baixa cobertura para esse fluxo. |
@@ -573,7 +573,7 @@ Os **16 exemplos ilustrativos** do anexo foram comparados aos caminhos do catál
 
 Os exemplos são fictícios e usam o formato mais comum observado por evento. Por isso não representam capturas brutas para diagnosticar ocorrências específicas nem um inventário de todas as propriedades opcionais. Não substituíram os exemplos existentes da documentação.
 
-Para validar os achados, solicitar quantidades e denominadores por cenário, período exato, configuração dos produtos, método/gateway, tratamento de duplicidade na coleta, timestamp de recebimento e consultas reproduzíveis com dados pessoais removidos. É útil manter separadas as análises por assinatura e por pagamento, incluindo casos que não encontraram correspondência.
+Para validar os achados, solicitar quantidades e denominadores por cenário, período exato, configuração dos produtos, método de pagamento, tratamento de duplicidade na coleta, timestamp de recebimento e consultas reproduzíveis com dados pessoais removidos. É útil manter separadas as análises por assinatura e por pagamento, incluindo casos que não encontraram correspondência.
 
 A seleção pública exclui taxas comerciais de conversão, mix de planos do cliente, nomes de produtos e pessoas, nomes de coleções e detalhes particulares da operação. Nesta revisão, somente esta página recebeu os novos apontamentos; os artigos, gatilhos, regras, exemplos, catálogo e débitos técnicos foram preservados.
 
@@ -630,7 +630,7 @@ Em particular:
 
 O material alterna amostras de uma hora, seis horas, doze horas e um dia. Algumas linhas usam denominadores diferentes do total anunciado na ficha, como a presença rara de `NextBilling` em fatura expirada. É necessário esclarecer esses recortes antes de publicar comparações numéricas.
 
-As expressões “100%” e “nunca” descrevem a presença da chave na amostra. Não definem tamanho fixo de listas, formato único de documentos, disponibilidade por gateway ou obrigação de envio. Isso é especialmente importante em Pedido de Compra Cancelado, com apenas duas ocorrências, e nos eventos sem tráfego real observado naquela janela.
+As expressões “100%” e “nunca” descrevem a presença da chave na amostra. Não definem tamanho fixo de listas, formato único de documentos, disponibilidade por meio de pagamento ou obrigação de envio. Isso é especialmente importante em Pedido de Compra Cancelado, com apenas duas ocorrências, e nos eventos sem tráfego real observado naquela janela.
 
 Os trechos chamados de exemplo real não são envelopes completos: trazem apenas partes dos dados, identificadores truncados e valores de pessoas. Eles não foram copiados para os artigos. Os **44 exemplos completos já documentados** foram preservados.
 
@@ -654,7 +654,7 @@ A nova descrição de `CancellationReason` como texto livre com opções sugerid
 | --- | --- |
 | Fatura Criada e Pedido Expirado limitados a Pix e boleto | Mantidos todos os meios de pagamento, incluindo cartão e os demais gatilhos já confirmados. |
 | Reembolso solicitado por qualquer pedido do comprador | Mantida a condição de solicitação do membro encaminhada à avaliação manual. |
-| Chargeback descrito como simples abertura de contestação no cartão | Mantido o estorno confirmado e as restrições por gateway, incluindo o fluxo de disputa Pix. |
+| Chargeback descrito como simples abertura de contestação no cartão | Mantido o estorno confirmado e as restrições por meio de pagamento e fluxo, incluindo a disputa Pix. |
 | `Cycle` seria exclusivamente a quantidade de períodos totalmente quitados | Mantida a definição confirmada de ciclo da assinatura, usado para acompanhar renovações. Não foi adotada a regra de incremento apenas na última parcela. |
 | Liberação de acesso deveria ser calculada exclusivamente por `Cycle` | Mantida a orientação de acompanhar a mudança efetiva pelos eventos de acesso, sem criar uma fórmula de direito de acesso a partir dos contadores. |
 | `Cycle` seria substituído por `CanceledDate` ou `ExpiredDate` | Não foi definida substituição universal entre esses campos. Preservar as propriedades de cada evento e validar sua presença nos contextos correspondentes. |

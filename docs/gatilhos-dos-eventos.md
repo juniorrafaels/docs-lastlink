@@ -23,8 +23,8 @@ Os horários de rotina indicados nesta página usam o **horário de Brasília**.
 | [Assinatura Expirada](#assinatura-expirada) | `Subscription_Expired` | Fim do prazo e da carência sem pagamento, ou outras condições de expiração. |
 | [Assinatura Cancelada](#assinatura-cancelada) | `Subscription_Canceled` | Cancelamento da assinatura pelos fluxos descritos. |
 | [Reembolso solicitado](#reembolso-solicitado) | `Refund_Requested` | Pedido do membro encaminhado à avaliação manual. |
-| [Pagamento Reembolsado](#pagamento-reembolsado) | `Payment_Refund` | Gateway confirma o reembolso. |
-| [Pagamento Estornado](#pagamento-estornado) | `Payment_Chargeback` | Estorno ou disputa confirmada, conforme gateway e meio. |
+| [Pagamento Reembolsado](#pagamento-reembolsado) | `Payment_Refund` | Lastlink confirma o reembolso. |
+| [Pagamento Estornado](#pagamento-estornado) | `Payment_Chargeback` | Estorno ou disputa confirmada, conforme o meio de pagamento e o fluxo da compra. |
 | [Periodo de Reembolso Terminado](#periodo-de-reembolso-terminado) | `Refund_Period_Over` | Rotina para pagamento aprovado com garantia encerrada. |
 | [Início liberação de acesso](#início-liberação-de-acesso) | `Product_Access_Started` | Acesso criado por pagamento, convite, order bump ou bundle. |
 | [Fim liberação de acesso](#fim-liberação-de-acesso) | `Product_Access_Ended` | Acesso efetivamente removido. |
@@ -44,7 +44,7 @@ O evento é disparado quando uma **cobrança pendente é criada**, nos seguintes
 - Upsell.
 - Renovação de assinatura.
 - Segunda parcela em diante do Parcelamento Inteligente.
-- Renovação das assinaturas antigas processadas pela Iugu.
+- Renovação das assinaturas antigas.
 
 A primeira parcela do Parcelamento Inteligente criada no checkout não gera este evento.
 
@@ -61,11 +61,11 @@ Em Pix e boleto, a preparação do payload aguarda o QR Code ou a linha digitáv
 
 **Identificador:** `Purchase_Order_Confirmed`.
 
-O evento é disparado quando o gateway confirma o **primeiro pagamento da assinatura**. A criação da fatura, isoladamente, não confirma esse pagamento.
+O evento é disparado quando a Lastlink confirma o **primeiro pagamento da assinatura**. A criação da fatura, isoladamente, não confirma esse pagamento.
 
 ### Meios de pagamento e condições
 
-Aplica-se a todos os meios de pagamento. A confirmação de boleto ocorre pela Iugu; o fluxo novo de pagamentos ainda não confirma boleto.
+Aplica-se a todos os meios de pagamento.
 
 [Campos e exemplos do evento](./eventos/compra-aprovada.mdx).
 
@@ -183,7 +183,7 @@ Os gatilhos de cancelamento contemplam:
 - Cancelamento pelo membro.
 - Cancelamento pelo produtor, individualmente ou pela opção de cancelar todos.
 - Cancelamento pela equipe da Lastlink.
-- Reembolso ou estorno processado pela Iugu.
+- Reembolso ou estorno confirmado.
 - Cancelamento do Parcelamento Inteligente.
 - Cancelamento pelo membro no aplicativo do banco, no Pix Automático.
 - Falha na renovação após o número máximo de tentativas aplicável à situação.
@@ -219,7 +219,7 @@ O prazo pode ser de **7, 15 ou 30 dias**, conforme a configuração do produto. 
 
 **Identificador:** `Payment_Refund`.
 
-O evento é disparado quando o **gateway confirma o reembolso**. O pedido de reembolso, sozinho, não dispara esse evento.
+O evento é disparado quando a **Lastlink confirma o reembolso**. O pedido de reembolso, sozinho, não dispara esse evento.
 
 ### Meios de pagamento e condições
 
@@ -232,13 +232,13 @@ Aplica-se a todos os meios de pagamento. O registro de **reembolso fora da plata
 
 **Identificador:** `Payment_Chargeback`.
 
-O evento contempla **contestação de cartão ou protesto na Iugu**, e **disputa de Pix pelo MED perdida na Yuno**.
+O evento contempla **contestação de cartão**, **protesto** e **disputa de Pix (MED) perdida**.
 
 `Data.Purchase.ChargebackDate` informa a data e a hora do estorno confirmado. O payload se refere aos dados do pagamento original.
 
 ### Meios de pagamento e condições
 
-O envio depende do gateway e do fluxo. Na Yuno, somente a disputa de **Pix** perdida gera este evento; contestação de cartão na Yuno não o gera.
+O envio depende do meio de pagamento e do fluxo da compra. Em **Pix**, somente a disputa perdida gera este evento. Em cartão, nem toda contestação gera o evento: o envio depende do fluxo da compra.
 
 [Campos e exemplos do evento](./eventos/pagamento-estornado.mdx).
 

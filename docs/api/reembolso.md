@@ -51,15 +51,15 @@ curl https://api.lastlink.com/v1/charges/9f3b1c7a-2d64-4f81-a0b5-6e2c8d4a7f13/re
 
 ## A devolução nunca é imediata
 
-Mesmo aprovada, ela depende do saldo na carteira e da resposta do provedor. Por isso o status nunca nasce `COMPLETED`:
+Mesmo aprovada, ela depende do saldo na carteira e da confirmação da Lastlink. Por isso o status nunca nasce `COMPLETED`:
 
 | Status | Significa |
 | --- | --- |
 | `UNDER_REVIEW` | Aguardando a avaliação da Lastlink. |
-| `PROCESSING` | Aprovada, a caminho do provedor. |
+| `PROCESSING` | Aprovada, em processamento pela Lastlink. |
 | `COMPLETED` | O dinheiro voltou ao pagador (`refundedAt` preenchido). |
 | `REJECTED` | Recusada na avaliação. |
-| `FAILED` | Recusada pelo provedor (prazo, saldo, regra do PSP). |
+| `FAILED` | Recusada na execução (prazo, saldo ou regra de reembolso). |
 | `CANCELLED` | Cancelada antes de executar. |
 
 Não anuncie a devolução ao seu cliente antes de ver `COMPLETED`. Acompanhe pelo `GET /refunds` ou pelo webhook.

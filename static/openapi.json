@@ -515,7 +515,7 @@
           "status": {
             "type": "string",
             "enum": ["UNDER_REVIEW", "PROCESSING", "COMPLETED", "REJECTED", "FAILED", "CANCELLED"],
-            "description": "Situação da devolução. Nunca nasce COMPLETED: mesmo aprovada, ela depende de saldo na carteira e da resposta do provedor — acompanhe por GET /v1/charges/{id}/refunds."
+            "description": "Situação da devolução. Nunca nasce COMPLETED: mesmo aprovada, ela depende de saldo na carteira e da confirmação da Lastlink — acompanhe por GET /v1/charges/{id}/refunds."
           },
           "amount": {"type": "integer", "format": "int64"},
           "createdAt": {"type": "string", "format": "date-time"},
@@ -600,7 +600,7 @@
               "chargeId": {"type": "string", "format": "uuid"},
               "status": {"$ref": "#/components/schemas/ChargeStatus"},
               "paidAt": {"type": "string", "format": "date-time", "nullable": true},
-              "gatewayTransactionId": {"type": "string", "nullable": true, "description": "Identificador da transação no provedor."},
+              "gatewayTransactionId": {"type": "string", "nullable": true, "description": "Identificador da transação na Lastlink."},
               "externalReference": {"type": "string", "nullable": true}
             }
           }
@@ -683,7 +683,7 @@
               },
               "refundedAt": {"type": "string", "format": "date-time", "nullable": true, "description": "Quando o dinheiro voltou ao pagador."},
               "amountCents": {"type": "integer", "format": "int64", "nullable": true, "description": "Valor devolvido, em centavos."},
-              "gatewayTransactionId": {"type": "string", "nullable": true, "description": "Identificador da transação no provedor."},
+              "gatewayTransactionId": {"type": "string", "nullable": true, "description": "Identificador da transação na Lastlink."},
               "externalReference": {"type": "string", "nullable": true, "description": "A referência que você enviou na criação da cobrança."}
             }
           }
