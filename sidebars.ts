@@ -12,6 +12,7 @@ const sidebars: SidebarsConfig = {
         'autenticacao',
         'retentativas',
         'regras',
+        'jornada-dos-eventos',
         'gatilhos-dos-eventos',
         'catalogo-de-variaveis',
         {

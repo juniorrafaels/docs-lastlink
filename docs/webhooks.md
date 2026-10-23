@@ -11,10 +11,11 @@ Os eventos são enviados via **HTTP `POST`**, com corpo JSON. Consulte as [regra
 
 ## Por onde começar
 
-1. Consulte [Gatilhos dos eventos](./gatilhos-dos-eventos.md) para escolher a notificação adequada à sua automação.
-2. Abra o artigo do evento para conferir os campos, as condições e os exemplos completos.
-3. Use o [Catálogo de variáveis](./catalogo-de-variaveis.md) para localizar um campo e os eventos em que ele foi documentado.
-4. Implemente o recebimento conforme as [Regras](./regras.md), considerando o token, o timeout e as retentativas.
+1. Veja a [Jornada dos eventos](./jornada-dos-eventos.md) para entender a ordem em que os webhooks acontecem.
+2. Consulte [Gatilhos dos eventos](./gatilhos-dos-eventos.md) para escolher a notificação adequada à sua automação.
+3. Abra o artigo do evento para conferir os campos, as condições e os exemplos completos.
+4. Use o [Catálogo de variáveis](./catalogo-de-variaveis.md) para localizar um campo e os eventos em que ele foi documentado.
+5. Implemente o recebimento conforme as [Regras](./regras.md), considerando o token, o timeout e as retentativas.
 
 ## Formatos de payload
 
